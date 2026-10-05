@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+.env
+.DS_Store
+monte_carlo/results/raw/
+monte_carlo/results/REPORT.md
+monte_carlo/results/tables/
+monte_carlo/results/text/
