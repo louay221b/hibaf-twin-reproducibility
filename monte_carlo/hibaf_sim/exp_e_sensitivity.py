@@ -3,14 +3,17 @@
 E1 completeness audit: which quantities can be computed per parameter set (and what is missing).
 E2 set comparison: DT latency at the largest N_site for every set with the needed parameters.
 E3 tolerance thresholds (parameter-free): the largest T_HECM (ms) for which a sequential workload
-   still fits in Delta_w under the HECM-only model, from count * T_HECM <= Delta_w.
+   still fits in Delta_w under the HECM-only model, from  count * T_HECM <= Delta_w.
+   These are analytical inversions; no timing value is assumed.
 """
 from __future__ import annotations
 
+import numpy as np
 import pandas as pd
 
-from .costs import HECM_ONLY, MODELS, batch_pond_ops, dt_ops, evaluate, scenario_label,
-from .costs import sensor_ops, station_ops
+from .costs import (FULL, HECM_ONLY, MODELS, batch_pond_ops, dt_ops, evaluate, scenario_label,
+                    sensor_ops, station_ops)
+from .params import ROLES, TIMING_FIELDS
 
 VT = "analytical result"
 
@@ -19,6 +22,7 @@ def run(cfg, psets, skip):
     sc = cfg["scenario"]["uniform_reference_roles"]
     dws = cfg["delta_w_s"]
 
+    # E1: completeness audit
     audit = []
     quantities = [("sensor", "sensor report (Eq.5)", sensor_ops()),
                   ("pond", "pond batch, n=100 (Eq.2)", batch_pond_ops(100)),
@@ -34,6 +38,7 @@ def run(cfg, psets, skip):
                                   missing_or_blocked="; ".join(miss)))
     audit = pd.DataFrame(audit)
 
+    # E2: set comparison (DT at largest N_site)
     Nmax = max(cfg["dt"]["N_site"])
     comp = []
     for ps in psets:
@@ -44,14 +49,14 @@ def run(cfg, psets, skip):
         for dw in dws:
             comp.append(dict(experiment="E2_set_comparison", param_set=ps.name,
                              T_HECM_ms=ps.timings["T_HECM_ms"], N_site=Nmax, delta_w_s=dw,
-                             cost_model=HECM_ONLY, scenario=scenario_label(ps, HECM_ONLY),
-                             n_hecm=dt_ops(Nmax).hecm, dt_projection_ms=lat,
-                             pct_of_window=100 * lat / (dw * 1000), value_type=VT))
+                             cost_model=HECM_ONLY, scenario=scenario_label(ps, HECM_ONLY), n_hecm=dt_ops(Nmax).hecm, dt_projection_ms=lat, pct_of_window=100 * lat / (dw * 1000),
+                             value_type=VT))
     comp = pd.DataFrame(comp)
     if comp["param_set"].nunique() < 2 if not comp.empty else True:
         skip.add("E_sensitivity", "set_comparison_plot", "n/a", "all",
                  ["fewer than two parameter sets with a non-null T_HECM covering the DT role"])
 
+    # E3: tolerance thresholds
     thr = []
     for dw in dws:
         for N in cfg["dt"]["N_site"]:
