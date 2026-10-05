@@ -1,0 +1,74 @@
+# HiBaF-Twin analytical / Monte Carlo simulation -- single configuration file.
+# Nothing in this file is a result of a physical-device run.
+
+seed: 20260603
+n_windows: 10000
+
+delta_w_s: [5, 10, 30, 60]
+
+scenario:
+  uniform_reference_roles: [pond]
+
+per_pond:
+  n: [10, 50, 100, 500]
+
+site:
+  P: [10, 50, 200]
+  n_per_pond: [10, 20]
+
+dt:
+  N_site: [10, 100, 500, 1000, 2000, 4000]
+
+mixed_validity:
+  n: [10, 50, 100, 500]
+  mu_pct: [0, 1, 5, 10, 25]
+  infer_sibling: false
+
+replay:
+  n: [10, 50, 100, 500]
+  replay_pct: [0, 10, 25, 50]
+  class_weights:
+    a_cross_window_replay: 0.25
+    b_accepted_same_window_replay: 0.25
+    c_exact_duplicate_in_batch: 0.25
+    d_same_id_nonce_modified_payload: 0.25
+  invalid_new_nonce_pct_of_non_replay: 5
+
+hierarchy:
+  P: [10, 50, 200]
+  n_per_pond: [10, 20, 100, 500]
+  control_plane:
+    sensor_verifies_rl_signature: true
+    pond_verifies_rl_signature: true
+    dt_verifies_rl_signature: true
+    station_verifies_rl_signature: true
+
+param_sets:
+  - name: taji_ghanimi_2024_pc_reference
+    display_name: "Taji-Ghanimi reference-platform"
+    provenance_status: LITERATURE_REPORTED
+    source: "K. Taji and F. Ghanimi, 'Enhancing security and privacy in smart agriculture: A novel homomorphic signcryption system,' Results in Engineering, 2024, Table 4"
+    platform: "Intel Core i7, 2.60 GHz, Windows 10, JDK 1.6, 8 GB RAM (reference PC environment of the source)"
+    security_label: "as reported by source; no independent security inference"
+    hecm_semantics: as_reported_by_source
+    reference_mapped_roles: [station, dt]
+    T_HECM_ms: 2.20
+    T_HAdd_ms: null
+    T_hash_ms: null
+    T_AEAD_enc_ms: null
+    T_AEAD_dec_ms: null
+
+  - name: genus2_128bit_reference
+    display_name: "genus-2 ~128-bit reference"
+    provenance_status: TEMPLATE
+    source: null
+    platform: null
+    security_label: "approximately 128-bit"
+    hecm_semantics: null
+    notes: "Do not populate from Kummer x-only timings; verify that the source reports full group operations."
+    reference_mapped_roles: []
+    T_HECM_ms: null
+    T_HAdd_ms: null
+    T_hash_ms: null
+    T_AEAD_enc_ms: null
+    T_AEAD_dec_ms: null
