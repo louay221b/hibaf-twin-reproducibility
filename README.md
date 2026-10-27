@@ -12,7 +12,7 @@ Everything in this package was executed. Each item is labelled by the kind of ev
 | `results/figures/` | Figs. 6–12 (PNG + PDF) | simulated |
 | `crypto_level1/` | Genus-2 Cantor arithmetic over F_(2^127−1), wNAF, Straus, Pippenger; `bench_g2_127_calibration.json` (ratios used in ns-3); `bench_repeat.json` (3 repeats); operation-count and isolation-strategy models; the fixed version of the original Monte Carlo script | measured (ratios) / analytical |
 | `curve/` | **Certified curve** y² = x⁵ + 8 over F_p, p = 2¹²⁷ − 2437; prime order q (254 bits). `find_curve.py` (CM search), `validate_curve.py` (order certificate, embedding degree, rho bits, twists, generator), `real_curve_test.py` (Schnorr, MSM batch, 64-byte canonical encoding on the real curve), 5-repeat benchmark on this curve | certified / executable / measured |
-| `reference_model/` | Executable HiBaF v2 on a prime-order toy Jacobian, with real AES-128-GCM and BLAKE2s; `test_hibaf_v2.py` passes 20/20 correctness and attack checks (`test_output.txt`) | executable |
+| `reference_model/` | Executable HiBaF v2 on a prime-order toy Jacobian, with real AES-128-GCM and BLAKE2s; `test_hibaf_v2.py` passes 35/35 correctness and attack checks (`test_output.txt`) | executable |
 | `tamarin/` | Tamarin 1.10.0 models and proof logs: enrolment (unbounded), core (unbounded and 3-epoch), forward secrecy (3-epoch; unbounded attempt) | symbolic |
 | `REVIEW_ASSESSMENT.md` | Three-reviewer assessment and the remaining checklist | — |
 
@@ -57,7 +57,7 @@ tamarin-prover --prove tamarin/hibaf_v3_fs_grace.spthy
 | `tamarin/hibaf_v3_enrol.spthy` | Three-message (SIGMA-I style) enrolment with key confirmation; 5 lemmas verified, unbounded (`v3_enrol.log`) | symbolic |
 | `tamarin/hibaf_v3_fs_grace.spthy` | Three-epoch ratchet with the back end's grace-period retention of the last window's keys: forward secrecy with the grace exception, other windows secret, secret after the grace period, and reachability of the grace exposure; 4 lemmas verified (`fs_grace.log`) | symbolic |
 | `tamarin/hibaf_v2_enrol_flaw.spthy` | Old two-message enrolment: Tamarin falsifies "BE installs only keys the sensor derived" (replayed message 1 overwrites the key) | symbolic (attack) |
-| `reference_model/` | Updated model (3-message enrolment, evidence-based revocation); 24/24 checks (`test_output.txt`) | executable |
+| `reference_model/` | Updated model (3-message enrolment, evidence-based revocation); 35/35 checks (`test_output.txt`) | executable |
 | `platform/` | Portable C implementation (`g2.c`, `bench.c`) of the certified curve; ESP32 run under Espressif QEMU (`esp32_run.txt`, CCOUNT with `-icount shift=5`, 1.28 ticks/instruction); Cortex-A72 build under QEMU 9.2.2 with insn/hotblocks plugins (`a72_run.txt`) and llvm-mca cycle model (`a72_mca.py`); summary `platform_estimates.json` | **emulated estimates, not hardware measurements** |
 | `ns3/hibaf-sim.cc` | Adds `--evidence` (revocation on back-end-validated evidence, default 1), `--byzNoticeRate`, `--sharedChannel`, `--pondSpacing`, `--beaconStagger` | simulated |
 | `campaign/campaign_rev.py`, `analyze_rev.py` | 1,800 runs: Dev (scenario D with evidence), Dz (Byzantine collector), G (shared channel), H_* (recalibration with emulated platform costs) | simulated |
@@ -79,10 +79,10 @@ The old scenario D results (revocation on the collector's notice alone) remain i
 | `analytic/eval_analytic.py` | Monte Carlo (seed 20260603, 10 000 windows): mixed validity (individual, Base + bisection, MSM + bisection, HiBaF-MSM controller) and replay filtering vs. B4; Base reproduces the earlier manuscript exactly | Monte Carlo |
 | `analytic/eval_analytic2.py` | Figures, scalability (back-end admissible T_HECM, workers, site critical path) and energy (E = P·T) | analytical |
 | `analytic/eval_tables_v3.py` | Operation-count, scheme-comparison, B2/B3 and energy tables | analytical |
-| `hardware_harness/HiBaF_hardware_harness.zip` | Raspberry Pi native timing script and ESP-IDF v5.4.1 firmware (prebuilt) for real hardware timings | to be run on hardware |
+| `hardware_harness/` | Raspberry Pi C sources and native runner (`raspberry_pi/`), ESP-IDF source and prebuilt firmware (`esp32_idf/`), and raw measurement logs (`results/`); original harness ZIP also retained | to be run on hardware |
 
 ## Recheck (2026-10-15, evening)
-- `H2` (challenge hash to Z_q) is BLAKE2b-512 reduced mod q in the reference model and the real-curve test (a 256-bit hash reduced mod q ≈ 2^254 is at statistical distance ≈ 2^-62.7 from uniform). All 24 reference-model checks and the real-curve test pass.
+- `H2` (challenge hash to Z_q) is BLAKE2b-512 reduced mod q in the reference model and the real-curve test (a 256-bit hash reduced mod q ≈ 2^254 is at statistical distance ≈ 2^-62.7 from uniform). All 35 reference-model checks and the real-curve test pass.
 - Monte Carlo controller candidates are the powers of two b ∈ {2,…,256} with g ∈ {1,2,4,8,16} (40 candidates), identical to Algorithm 3 and the ns-3 controller.
 - `analytic/be_sens.py`: 60 runs of scenario A (500 sensors) with the measured x86 back-end cost (1.19 ms per scalar multiplication).
 - `analytic/analyze_fig.py`: regenerates the ns-3 figures from the archived `all_runs_original_3510.csv` with generic axis labels (summary tables are byte-identical to the originals).
@@ -97,3 +97,14 @@ The old scenario D results (revocation on the collector's notice alone) remain i
 
 - `hardware_harness/results/pi_results.csv`: `run_pi.sh` output on a Raspberry Pi 4 Model B Rev 1.5 (1.8 GHz, performance governor, no throttling, 50-52 C, Linux 6.18.50, gcc 14.2.0); self-test PASS. One 254-bit scalar multiplication: 1.706 ms median (1.690-1.720). **Hardware measurement.**
 - `campaign/campaign_hw2.py`, `campaign/analyze_pi.py`, `results/rev_H_pi.csv`: final ns-3 recalibration (scenarios A, A2, E; 510 runs) with both measured costs (ESP32 102.666 ms, Pi 4 1.706 ms). The earlier runs with emulated Cortex-A72 costs (`rev_H_hw.csv`) are kept for comparison.
+
+## Browsable ESP32 and Raspberry Pi source
+
+The hardware-harness ZIP is also unpacked in this repository for direct inspection:
+
+- **Raspberry Pi 4:** `hardware_harness/raspberry_pi/hw_bench.c`, `g2.c`, `run_pi.sh`. The script builds with GCC and records native measurements on the board.
+- **ESP32:** `hardware_harness/esp32_idf/main/hw_bench.c`, `g2.c`, `main.c`, ESP-IDF CMake files and `sdkconfig.defaults`. Requires ESP-IDF 5.4.1 to rebuild, using `idf.py set-target esp32 build`.
+- **Optional prebuilt firmware:** `hardware_harness/esp32_idf/prebuilt/`.
+- **Original measurement data:** `hardware_harness/results/`. `QEMU_SMOKE_TEST_NOT_HARDWARE.log` is an emulator check, **not a hardware timing measurement**.
+
+The reference model includes the pending-duplicate regression check: `python reference_model/test_hibaf_v2.py` (requires the Python `cryptography` package), expected `35/35 checks passed`.
