@@ -5,7 +5,13 @@ __pycache__/
 venv/
 .env
 .DS_Store
-monte_carlo/results/raw/
-monte_carlo/results/REPORT.md
-monte_carlo/results/tables/
-monte_carlo/results/text/
+# Generated reproducibility outputs
+runs/
+ns-3.49/
+analytic/generated_tables/
+analytic/figures_generic/
+analytic/tables_generic/
+platform/hb_tmp.txt
+platform/bench_a72
+platform/bench64
+platform/bench_esp32.elf
