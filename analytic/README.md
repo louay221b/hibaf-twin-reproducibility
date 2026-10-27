@@ -1,6 +1,6 @@
 # Portable analytical evaluation
 
-Run these scripts from **any working directory** on Windows, Linux, or macOS. Input paths are resolved relative to the location of each script and the root of this repository; no `/home/claude` directory is required.
+Run these scripts from **any working directory** on Windows, Linux, or macOS. Input paths are resolved relative to the location of each script and the root of this repository; no machine-specific working directory is required.
 
 ## Python dependencies
 
