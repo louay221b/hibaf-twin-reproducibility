@@ -1,0 +1,199 @@
+maude tool: 'maude'
+ checking version: 3.5. OK.
+ checking installation: OK.
+[Theory HiBaF_revocation_fixed] Theory loaded
+[Theory HiBaF_revocation_fixed] Theory translated
+[Theory HiBaF_revocation_fixed] Derivation checks started
+[Theory HiBaF_revocation_fixed] Derivation checks ended
+[Theory HiBaF_revocation_fixed] Theory closed
+[Saturating Sources] Step 1 (Max 5)
+[Saturating Sources] Done
+theory HiBaF_revocation_fixed begin
+
+// Function signature and definition of the equational theory E
+
+functions: fst/1, h/1, pair/2, pk/1, sdec/2, senc/2, sign/2, snd/1,
+           true/0, verify/3
+equations:
+    fst(<x.1, x.2>) = x.1,
+    sdec(senc(x.1, x.2), x.2) = x.1,
+    snd(<x.1, x.2>) = x.2,
+    verify(sign(x.1, x.2), x.1, pk(x.2)) = true
+
+
+
+
+
+
+
+
+
+
+
+rule (modulo E) Setup:
+   [ Fr( ~k ), Fr( ~x ) ]
+  --[ Setup( $S ) ]->
+   [ !Key( $S, ~k ), !Ltk( $S, ~x ), !Pk( $S, pk(~x) ), Out( pk(~x) ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Reveal_key:
+   [ !Key( $S, k ) ] --[ CorruptK( $S ) ]-> [ Out( k ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Reveal_sig_key:
+   [ !Ltk( $S, x ) ] --[ CorruptX( $S ) ]-> [ Out( x ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Honest_report:
+   [ !Key( $S, ~k ), !Ltk( $S, ~x ), Fr( ~m ), Fr( ~n ) ]
+  --[ Report( $S, ~n ) ]->
+   [
+   Out( <$S, ~n, senc(~m, ~k), sign(<$S, ~n, senc(~m, ~k)>, ~x), 
+         h(<~k, ~n, senc(~m, ~k), sign(<$S, ~n, senc(~m, ~k)>, ~x)>)>
+   )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) DT_evidence_check:
+   [ !Key( $S, k ), !Pk( $S, pkS ), In( <$S, n, C, sig, T> ) ]
+  --[
+  Eq( T, h(<k, n, C, sig>) ), Neq( verify(sig, <$S, n, C>, pkS), true ),
+  Revoke( $S )
+  ]->
+   [ ]
+
+  /*
+  rule (modulo AC) DT_evidence_check:
+     [ !Key( $S, k ), !Pk( $S, pkS ), In( <$S, n, C, sig, T> ) ]
+    --[ Eq( T, h(<k, n, C, sig>) ), Neq( z, true ), Revoke( $S ) ]->
+     [ ]
+    variants (modulo AC)
+    1. $S    = $S.9
+       C     = C.9
+       n     = n.9
+       pkS   = pkS.9
+       sig   = sig.9
+       z     = verify(sig.9, <$S.9, n.9, C.9>, pkS.9)
+    
+    2. $S    = $x.9
+       C     = x.10
+       n     = x.13
+       pkS   = pk(x.14)
+       sig   = sign(<$x.9, x.13, x.10>, x.14)
+       z     = true
+  */
+
+restriction equality:
+  "∀ a b #i. (Eq( a, b ) @ #i) ⇒ (a = b)"
+  // safety formula
+
+restriction inequality:
+  "∀ a b #i. (Neq( a, b ) @ #i) ⇒ (¬(a = b))"
+  // safety formula
+
+restriction one_registration_per_identity:
+  "∀ S #i #j. ((Setup( S ) @ #i) ∧ (Setup( S ) @ #j)) ⇒ (#i = #j)"
+  // safety formula
+
+lemma revocation_possible:
+  exists-trace "∃ S #i. Revoke( S ) @ #i"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ S #i. (Revoke( S ) @ #i)"
+*/
+simplify
+solve( !Key( $S, k ) ▶₀ #i )
+  case Setup
+  solve( !Pk( $S, pkS ) ▶₁ #i )
+    case Setup
+    solve( splitEqs(0) )
+      case split_case_1
+      solve( !KU( h(<~k, n, C, sig>) ) @ #vk.8 )
+        case c_h
+        solve( !KU( ~k ) @ #vk.12 )
+          case Reveal_key
+          SOLVED // trace found
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma revocation_soundness:
+  all-traces
+  "∀ S #i. (Revoke( S ) @ #i) ⇒ (∃ #j. (CorruptK( S ) @ #j) ∧ (#j < #i))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S #i. (Revoke( S ) @ #i) ∧ ∀ #j. (CorruptK( S ) @ #j) ⇒ ¬(#j < #i)"
+*/
+simplify
+solve( !Key( $S, k ) ▶₀ #i )
+  case Setup
+  solve( !Pk( $S, pkS ) ▶₁ #i )
+    case Setup
+    solve( splitEqs(0) )
+      case split_case_1
+      solve( !KU( h(<~k, n, C, sig>) ) @ #vk.8 )
+        case Honest_report
+        by contradiction /* non-normal terms */
+      next
+        case c_h
+        solve( !KU( ~k ) @ #vk.12 )
+          case Reveal_key
+          by contradiction /* from formulas */
+        qed
+      qed
+    next
+      case split_case_2
+      by contradiction /* from formulas */
+    qed
+  qed
+qed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.10.0
+Maude version 3.5
+Git revision: cb62c305f8c8b8c1e664152aa33c95b7b8d5ef32, branch: master
+Compiled at: 2024-10-30 11:11:02.432289291 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: hibaf_revocation_fixed.spthy
+
+  processing time: 0.65s
+  
+  revocation_possible (exists-trace): verified (7 steps)
+  revocation_soundness (all-traces): verified (9 steps)
+
+==============================================================================

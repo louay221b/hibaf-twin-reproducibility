@@ -1,0 +1,13 @@
+{
+ "q_prime_ecpp_certificate_valid": true,
+ "p_prime_ecpp_certificate_valid": true,
+ "curve_nonsingular": true,
+ "L_on_curve": true,
+ "L_not_identity": true,
+ "qL_is_identity_python": true,
+ "q_in_hasse_weil_interval": true,
+ "two_q_exceeds_upper_bound": true,
+ "interval_width_bits": 194,
+ "q_bits": 254,
+ "order_equals_q_proved": true
+}

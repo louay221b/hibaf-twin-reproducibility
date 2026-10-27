@@ -1,0 +1,48 @@
+theory HiBaF_v2_enrol
+begin
+
+/* Enrolment of a sensor S with the back end BE: signed ephemeral Diffie-Hellman (SIGMA-like).
+   The TTP only certifies signing keys (!Pk); it never sees the ephemerals or K0.
+   Ephemerals are erased after use (linear S_wait fact consumed). */
+
+builtins: diffie-hellman, signing, hashing
+
+rule Register_pk:
+  [ Fr(~sk) ] --[ Registered($A) ]-> [ !Ltk($A, ~sk), !Pk($A, pk(~sk)), Out(pk(~sk)) ]
+
+rule Reveal_ltk:
+  [ !Ltk($A, sk) ] --[ RevLtk($A) ]-> [ Out(sk) ]
+
+rule S_enrol_1:
+  [ Fr(~a), !Ltk($S, skS) ]
+  --[ Start($S, $BE, 'g'^~a) ]->
+  [ S_wait($S, $BE, ~a), Out(<'e1', $S, $BE, 'g'^~a, sign(<'e1', $S, $BE, 'g'^~a>, skS)>) ]
+
+rule BE_enrol:
+  let K0 = h(<'enrol', X^~b, $S, $BE, X, 'g'^~b>) in
+  [ In(<'e1', $S, $BE, X, sigS>), Fr(~b), !Ltk($BE, skB), !Pk($S, pkS) ]
+  --[ Eq(verify(sigS, <'e1', $S, $BE, X>, pkS), true), BEEnrolled($BE, $S, K0), Running($BE, $S, K0) ]->
+  [ Out(<'e2', $S, $BE, X, 'g'^~b, sign(<'e2', $S, $BE, X, 'g'^~b>, skB)>) ]
+
+rule S_enrol_2:
+  let K0 = h(<'enrol', Y^~a, $S, $BE, 'g'^~a, Y>) in
+  [ S_wait($S, $BE, ~a), In(<'e2', $S, $BE, 'g'^~a, Y, sigB>), !Pk($BE, pkB) ]
+  --[ Eq(verify(sigB, <'e2', $S, $BE, 'g'^~a, Y>, pkB), true), SEnrolled($S, $BE, K0), Commit($S, $BE, K0) ]->
+  [ ]
+
+restriction equality: "All x y #i. Eq(x, y)@i ==> x = y"
+
+lemma executable:
+  exists-trace "Ex S BE K #i. SEnrolled(S, BE, K)@i & not (Ex A #r. RevLtk(A)@r)"
+
+/* K0 secrecy with perfect forward secrecy: long-term keys revealed AFTER enrolment do not help */
+lemma enrol_key_secrecy_pfs:
+  "All S BE K #i #j. SEnrolled(S, BE, K)@i & K(K)@j ==>
+      (Ex #r. RevLtk(S)@r & #r < #i) | (Ex #r. RevLtk(BE)@r & #r < #i)"
+
+/* agreement: the sensor's K0 was computed by the intended back end */
+lemma enrol_agreement:
+  "All S BE K #i. Commit(S, BE, K)@i ==>
+      (Ex #j. Running(BE, S, K)@j & #j < #i) | (Ex #r. RevLtk(BE)@r & #r < #i) | (Ex #r. RevLtk(S)@r & #r < #i)"
+
+end

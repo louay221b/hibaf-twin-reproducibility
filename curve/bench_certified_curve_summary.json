@@ -1,0 +1,84 @@
+{
+ "curve": "y^2=x^5+8 over F_p, p=2^127-2437 (certified prime order)",
+ "repeats": 5,
+ "T_hecm_ms": [
+  145.2112719500292,
+  142.9899924498386,
+  138.77990680011862,
+  128.39682505000383,
+  143.91828834995977
+ ],
+ "indiv_over_hecm": [
+  1.2311220382507262,
+  1.5087023644364974,
+  1.1511766593845958,
+  0.9802903253325108,
+  1.2731130900769563
+ ],
+ "rows": {
+  "1": {
+   "msm_over_hecm_mean": 1.1597734615777862,
+   "msm_over_hecm_sd": 0.2015748318224418,
+   "per_report": 1.1597734615777862,
+   "speedup_vs_indiv_mean": 1.082805468404373,
+   "speedup_vs_indiv_sd": 0.23869357594237317,
+   "speedup_vs_base_mean": 2.6512589204712604
+  },
+  "5": {
+   "msm_over_hecm_mean": 2.3615131276783092,
+   "msm_over_hecm_sd": 0.17430006146059662,
+   "per_report": 0.4723026255356618,
+   "speedup_vs_indiv_mean": 2.5983616793489634,
+   "speedup_vs_indiv_sd": 0.31449083121742083,
+   "speedup_vs_base_mean": 4.690498451590845
+  },
+  "10": {
+   "msm_over_hecm_mean": 3.8020725593252984,
+   "msm_over_hecm_sd": 0.5563536689664889,
+   "per_report": 0.38020725593252985,
+   "speedup_vs_indiv_mean": 3.324327001356313,
+   "speedup_vs_indiv_sd": 0.886476743998078,
+   "speedup_vs_base_mean": 5.633806716764738
+  },
+  "25": {
+   "msm_over_hecm_mean": 8.034097623853125,
+   "msm_over_hecm_sd": 0.45470580962583396,
+   "per_report": 0.321363904954125,
+   "speedup_vs_indiv_mean": 3.811133932405115,
+   "speedup_vs_indiv_sd": 0.4295746012097241,
+   "speedup_vs_base_mean": 6.382216708515969
+  },
+  "50": {
+   "msm_over_hecm_mean": 13.87915314241301,
+   "msm_over_hecm_sd": 1.2567412873101294,
+   "per_report": 0.2775830628482602,
+   "speedup_vs_indiv_mean": 4.4557301092225465,
+   "speedup_vs_indiv_sd": 0.7850890324476304,
+   "speedup_vs_base_mean": 7.3515555862269215
+  },
+  "100": {
+   "msm_over_hecm_mean": 26.448868408523296,
+   "msm_over_hecm_sd": 2.3192188113550456,
+   "per_report": 0.26448868408523296,
+   "speedup_vs_indiv_mean": 4.7291455814214105,
+   "speedup_vs_indiv_sd": 1.2060508188829577,
+   "speedup_vs_base_mean": 7.673310105625975
+  },
+  "250": {
+   "msm_over_hecm_mean": 64.74540888852349,
+   "msm_over_hecm_sd": 3.4790083729262915,
+   "per_report": 0.2589816355540939,
+   "speedup_vs_indiv_mean": 4.764637067922287,
+   "speedup_vs_indiv_sd": 0.8327965937151468,
+   "speedup_vs_base_mean": 7.779379840281794
+  },
+  "500": {
+   "msm_over_hecm_mean": 124.02856476843296,
+   "msm_over_hecm_sd": 4.896275721415405,
+   "per_report": 0.24805712953686593,
+   "speedup_vs_indiv_mean": 4.975705582403361,
+   "speedup_vs_indiv_sd": 0.895468725583168,
+   "speedup_vs_base_mean": 8.104168137058142
+  }
+ }
+}

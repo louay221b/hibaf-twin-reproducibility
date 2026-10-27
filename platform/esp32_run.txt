@@ -1,0 +1,29 @@
+Not initializing SPI Flash
+Warning: both -bios and -kernel arguments specified. Only loading the the -kernel file.
+CHECK fast_vs_generic_400_ops bad=0
+CHECK qL_is_identity PASS
+CHECK qP_is_identity_4_random PASS
+CHECK msm_n1 straus_w4_w5_pippenger_equal PASS
+CHECK msm_n13 straus_w4_w5_pippenger_equal PASS
+CHECK msm_n25 straus_w4_w5_pippenger_equal PASS
+CHECK linearity PASS
+VEC k=2^200+12345 deg=2 u0=144174427563130030682890042837566160723 u1=134713626181419129525293568081183537007 v0=54060006158543310976909045879213049030 v1=49500342074259641349597427078320648475
+VEC k=q-1 deg=2 u0=5 u1=170141183460469231731687303715884103285 v0=53170020498916633133183616058405509538 v1=116971162961552598598503687657478593750
+fallbacks_generic=405 fast_add=19936 fast_dbl=36820
+SELFTEST PASS
+RESULT fmul reps=2000 fmul=1.0 fsqr=0.0 finv=0.00 gadd=0.0 gdbl=0.0 ticks=963767
+RESULT fadd reps=2000 fmul=0.0 fsqr=0.0 finv=0.00 gadd=0.0 gdbl=0.0 ticks=287288
+RESULT finv reps=200 fmul=0.0 fsqr=0.0 finv=1.00 gadd=0.0 gdbl=0.0 ticks=7946568
+RESULT gadd reps=200 fmul=33.0 fsqr=7.0 finv=1.00 gadd=1.0 gdbl=0.0 ticks=12755751
+RESULT gdbl reps=200 fmul=36.0 fsqr=8.0 finv=1.00 gadd=0.0 gdbl=1.0 ticks=13202912
+RESULT hecm reps=5 fmul=10899.6 fsqr=2404.4 finv=307.20 gadd=51.2 gdbl=254.0 ticks=101104950
+RESULT indiv reps=5 fmul=12637.2 fsqr=2773.2 finv=359.80 gadd=100.2 gdbl=253.6 ticks=118093621
+RESULT straus_short_n1 reps=1 fmul=13905.0 fsqr=3043.0 finv=398.00 gadd=133.0 gdbl=255.0 ticks=26089408
+RESULT straus_short_n5 reps=1 fmul=25179.0 fsqr=5437.0 finv=739.00 gadd=443.0 gdbl=254.0 ticks=48097924
+RESULT straus_short_n10 reps=1 fmul=38871.0 fsqr=8345.0 finv=1153.00 gadd=817.0 gdbl=254.0 ticks=74755531
+RESULT pippenger_n10 reps=1 fmul=76953.0 fsqr=16415.0 finv=2309.00 gadd=2249.0 gdbl=258.0 ticks=147848656
+RESULT straus_short_n25 reps=1 fmul=81732.0 fsqr=17448.0 finv=2449.00 gadd=1992.0 gdbl=255.0 ticks=158310985
+RESULT pippenger_n25 reps=1 fmul=139461.0 fsqr=29675.0 finv=4203.00 gadd=4093.0 gdbl=256.0 ticks=268929498
+RESULT straus_short_n50 reps=1 fmul=143493.0 fsqr=30567.0 finv=4316.00 gadd=3255.0 gdbl=255.0 ticks=278662986
+RESULT pippenger_n50 reps=1 fmul=223557.0 fsqr=47515.0 finv=6751.00 gadd=6653.0 gdbl=260.0 ticks=431481577
+DONE

@@ -1,0 +1,97 @@
+theory HiBaF_v2_core3
+begin
+
+/*
+  BOUNDED variant: ratchet chain of three epochs (e0 -> e1 -> e2).
+  HiBaF v2 reporting core (Tamarin 1.10.0).
+  Enrolment is proved separately (hibaf_v2_enrol.spthy); here the enrolment key K0 is a fresh
+  secret shared by S and BE.  Collectors and the site station are untrusted relays (Dolev-Yao).
+  Abstractions: signatures -> builtin signing; AES-GCM -> senc + authenticated AD (pattern
+  check after sdec); PRF/ratchet -> hash h.  The BE replay cache is the restriction
+  'replay_cache'.  MSM/batch verification is computational and not modelled here.
+*/
+
+builtins: signing, symmetric-encryption, hashing
+
+rule Register_pk:
+  [ Fr(~sk) ] --[ Registered($A) ]-> [ !Ltk($A, ~sk), !Pk($A, pk(~sk)), Out(pk(~sk)) ]
+
+rule Reveal_ltk:
+  [ !Ltk($A, sk) ] --[ RevLtk($A) ]-> [ Out(sk) ]
+
+rule Enrolled:
+  [ Fr(~K0) ] --[ Pair($S, $BE, ~K0) ]->
+  [ S_st($S, $BE, 'e0', ~K0), BE_st($BE, $S, 'e0', ~K0), !SState($S, $BE, ~K0), !BState($BE, $S, ~K0) ]
+
+rule S_advance_01:
+  [ S_st($S, $BE, 'e0', K) ] --[ EraseS($S, K) ]->
+  [ S_st($S, $BE, 'e1', h(<'next', K>)), !SState($S, $BE, h(<'next', K>)) ]
+rule S_advance_12:
+  [ S_st($S, $BE, 'e1', K) ] --[ EraseS($S, K) ]->
+  [ S_st($S, $BE, 'e2', h(<'next', K>)), !SState($S, $BE, h(<'next', K>)) ]
+rule BE_advance_01:
+  [ BE_st($BE, $S, 'e0', K) ] --[ EraseBE($BE, $S, K) ]->
+  [ BE_st($BE, $S, 'e1', h(<'next', K>)), !BState($BE, $S, h(<'next', K>)) ]
+rule BE_advance_12:
+  [ BE_st($BE, $S, 'e1', K) ] --[ EraseBE($BE, $S, K) ]->
+  [ BE_st($BE, $S, 'e2', h(<'next', K>)), !BState($BE, $S, h(<'next', K>)) ]
+
+/* state compromise: reveals a ratchet state that has NOT yet been erased
+   (erasure is enforced by the restrictions 'erasure_S' / 'erasure_BE') */
+rule Corrupt_S_state:
+  [ !SState($S, $BE, K) ] --[ CorruptS($S, K) ]-> [ Out(K) ]
+rule Corrupt_BE_state:
+  [ !BState($BE, $S, K) ] --[ CorruptBE($BE, $S, K) ]-> [ Out(K) ]
+
+rule ST_beacon:
+  [ Fr(~w), Fr(~rho), !Ltk($ST, skST) ]
+  --[ Beacon($ST, ~w, ~rho) ]->
+  [ Out(<'beacon', $ST, ~w, ~rho, sign(<'beacon', $ST, ~w, ~rho>, skST)>) ]
+
+rule S_report:
+  let k  = h(<'enc', K, $S, $BE, w, rho>)
+      ct = senc(<~m, <$S, w, rho, ~nu>>, k) in
+  [ !SState($S, $BE, K), In(<'beacon', $ST, w, rho, sigST>), !Pk($ST, pkST), !Ltk($S, skS), Fr(~m), Fr(~nu) ]
+  --[ Eq(verify(sigST, <'beacon', $ST, w, rho>, pkST), true),
+      Sent($S, $BE, ~m, K, w, rho, ~nu), Secret($S, $BE, ~m, K), UseS($S, K) ]->
+  [ Out(<$S, w, ~nu, ct, sign(<'rep', $S, w, rho, ~nu, ct>, skS)>) ]
+
+/* BE ingest on the AEAD-only (un-audited) path: the strongest-assumption-free case */
+rule BE_ingest:
+  let k  = h(<'enc', K, $S, $BE, w, rho>) in
+  [ !BState($BE, $S, K), In(<$S, w, nu, senc(<m, <$S, w, rho, nu>>, k), sigS>),
+    In(<'beacon', $ST, w, rho, sigB>), !Pk($ST, pkST) ]
+  --[ Eq(verify(sigB, <'beacon', $ST, w, rho>, pkST), true),
+      Accept($BE, $S, w, nu), Commit($BE, $S, m, w, rho, nu), UseBE($BE, $S, K) ]->
+  [ ]
+
+restriction equality: "All x y #i. Eq(x, y)@i ==> x = y"
+restriction erasure_S:  "All S K #r #e. CorruptS(S, K)@r & EraseS(S, K)@e ==> #r < #e"
+restriction erasure_BE: "All B S K #r #e. CorruptBE(B, S, K)@r & EraseBE(B, S, K)@e ==> #r < #e"
+/* reports and ingestion read the persistent state record but may not use an erased state */
+restriction no_use_after_erasure_S:  "All S K #u #e. UseS(S, K)@u & EraseS(S, K)@e ==> #u < #e"
+restriction no_use_after_erasure_BE: "All B S K #u #e. UseBE(B, S, K)@u & EraseBE(B, S, K)@e ==> #u < #e"
+restriction replay_cache:
+  "All be s w nu #i #j. Accept(be, s, w, nu)@i & Accept(be, s, w, nu)@j ==> #i = #j"
+
+lemma executable:
+  exists-trace
+  "Ex BE S m w rho nu #i. Commit(BE, S, m, w, rho, nu)@i & not (Ex x y #r. CorruptS(x, y)@r)
+     & not (Ex x y z #r. CorruptBE(x, y, z)@r) & not (Ex A #r. RevLtk(A)@r)"
+
+/* origin authentication + agreement on (m, w, rho, nu) WITHOUT signature verification at BE */
+lemma agreement_aead_only:
+  "All BE S m w rho nu #i. Commit(BE, S, m, w, rho, nu)@i ==>
+      (Ex K #j. Sent(S, BE, m, K, w, rho, nu)@j & #j < #i)
+    | (Ex K2 #r. CorruptS(S, K2)@r) | (Ex K2 #r. CorruptBE(BE, S, K2)@r)"
+
+/* injective agreement: each sent report is committed at most once (replay cache) */
+lemma injective_agreement:
+  "All BE S m w rho nu #i #i2. Commit(BE, S, m, w, rho, nu)@i & Commit(BE, S, m, w, rho, nu)@i2 ==> #i = #i2"
+
+/* window binding: committed reports refer to a beacon really issued by the station */
+lemma window_binding:
+  "All BE S m w rho nu #i. Commit(BE, S, m, w, rho, nu)@i ==>
+      (Ex ST #j. Beacon(ST, w, rho)@j & #j < #i) | (Ex ST #r. RevLtk(ST)@r)"
+
+end

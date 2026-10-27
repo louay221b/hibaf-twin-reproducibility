@@ -34,6 +34,7 @@ class Fp2Poly:
     def monic(self, a):
         a = self.trim(a); inv = pow(a[-1], self.p-2, self.p); return [c*inv % self.p for c in a]
     def xgcd(self, a, b):
+        # returns d, s, t with d = s a + t b, d monic
         r0, r1, s0, s1, t0, t1 = self.trim(a), self.trim(b), [1], [], [], [1]
         while r1:
             q, r = self.divmod(r0, r1)
@@ -81,7 +82,7 @@ class Jacobian:
             x = rng.randrange(p); fx = sum(c*pow(x, i, p) for i, c in enumerate(self.f)) % p
             if fx == 0: continue
             if pow(fx, (p-1)//2, p) == 1:
-                y = next(t for t in range(p) if t*t % p == fx)
+                y = next(t for t in range(p) if t*t % p == fx)  # tiny p only
                 return ((-x % p, 1), (y,))
     def random_element(self, rng):
         return self.add(self.random_point(rng), self.random_point(rng))
@@ -95,6 +96,7 @@ def bsgs_order_in(J, D, lo, hi):
     G = J.neg(J.mul(m, D)); cur = J.mul(lo, D); out = []
     i = 0
     while lo + i*m <= hi:
+        # want lo + i m + j with (lo+im+j) D = O  <=> j D = -(lo+im) D
         target = J.neg(cur)
         for j in baby.get(target, []):
             N = lo + i*m + j
@@ -115,6 +117,7 @@ def find_curve(p, want_cofactor, seed=1):
     lo = int((p**0.5 - 1)**4) + 1; hi = int((p**0.5 + 1)**4)
     while True:
         f = [rng.randrange(p) for _ in range(5)] + [1]
+        # squarefree check via gcd(f, f')
         P = Fp2Poly(p); df = P.trim([i*c for i, c in enumerate(f)][1:])
         if len(P.xgcd(f, df)[0]) > 1: continue
         J = Jacobian(p, f)

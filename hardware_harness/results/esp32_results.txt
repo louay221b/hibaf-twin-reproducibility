@@ -1,0 +1,74 @@
+	i�J����ets Jul 29 2019 12:21:46
+
+rst:0x1 (POWERON_RESET),boot:0x13 (SPI_FAST_FLASH_BOOT)
+configsip: 0, SPIWP:0xee
+clk_drv:0x00,q_drv:0x00,d_drv:0x00,cs0_drv:0x00,hd_drv:0x00,wp_drv:0x00
+mode:DIO, clock div:2
+load:0x3fff0030,len:6276
+load:0x40078000,len:15748
+load:0x40080400,len:4
+ho 8 tail 4 room 4
+load:0x40080404,len:3860
+entry 0x4008063c
+I (31) boot: ESP-IDF v5.4.1 2nd stage bootloader
+I (31) boot: compile time Oct 15 2026 21:09:24
+I (31) boot: Multicore bootloader
+I (32) boot: chip revision: v3.0
+I (35) boot.esp32: SPI Speed      : 40MHz
+I (39) boot.esp32: SPI Mode       : DIO
+I (43) boot.esp32: SPI Flash Size : 2MB
+I (46) boot: Enabling RNG early entropy source...
+I (51) boot: Partition Table:
+I (53) boot: ## Label            Usage          Type ST Offset   Length
+I (60) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+I (66) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+I (73) boot:  2 factory          factory app      00 00 00010000 00100000
+I (79) boot: End of partition table
+I (82) esp_image: segment 0: paddr=00010020 vaddr=3f400020 size=08e04h ( 36356) map
+I (102) esp_image: segment 1: paddr=00018e2c vaddr=3ff80000 size=0001ch (    28) load
+I (103) esp_image: segment 2: paddr=00018e50 vaddr=3ffb0000 size=02188h (  8584) load
+I (110) esp_image: segment 3: paddr=0001afe0 vaddr=40080000 size=05038h ( 20536) load
+I (123) esp_image: segment 4: paddr=00020020 vaddr=400d0020 size=16f34h ( 94004) map
+I (155) esp_image: segment 5: paddr=00036f5c vaddr=40085038 size=06d40h ( 27968) load
+I (172) boot: Loaded app from partition at offset 0x10000
+I (172) boot: Disabling RNG early entropy source...
+I (183) cpu_start: Multicore app
+I (191) cpu_start: Pro cpu start user code
+I (191) cpu_start: cpu freq: 240000000 Hz
+I (191) app_init: Application information:
+I (191) app_init: Project name:     hibaf_hw_bench
+I (195) app_init: App version:      1
+I (199) app_init: Compile time:     Oct 15 2026 21:09:18
+I (204) app_init: ELF file SHA256:  cfa880115...
+I (208) app_init: ESP-IDF:          v5.4.1
+I (212) efuse_init: Min chip rev:     v0.0
+I (216) efuse_init: Max chip rev:     v3.99 
+I (220) efuse_init: Chip rev:         v3.0
+I (224) heap_init: Initializing. RAM available for dynamic allocation:
+I (230) heap_init: At 3FFAE6E0 len 00001920 (6 KiB): DRAM
+I (235) heap_init: At 3FFC4BE0 len 0001B420 (109 KiB): DRAM
+I (240) heap_init: At 3FFE0440 len 00003AE0 (14 KiB): D/IRAM
+I (246) heap_init: At 3FFE4350 len 0001BCB0 (111 KiB): D/IRAM
+I (251) heap_init: At 4008BD78 len 00014288 (80 KiB): IRAM
+I (258) spi_flash: detected chip: gd
+I (260) spi_flash: flash io: dio
+W (263) spi_flash: Detected size(4096k) larger than the size in the binary image header(2048k). Using the size in the binary image header.
+I (275) main_task: Started on CPU0
+I (278) main_task: Calling app_main()
+HiBaF-Twin hardware benchmark, CPU 240 MHz
+SELFTEST,esp32,PASS
+HW,esp32,field_mul,0,0.002448,0.002447,0.002452,7,2000
+HW,esp32,field_inv,0,0.201935,0.201580,0.202990,7,200
+HW,esp32,group_add,0,0.324040,0.324025,0.324480,7,200
+HW,esp32,group_dbl,0,0.336185,0.336180,0.336560,7,200
+HW,esp32,hecm,0,102.666000,101.778000,103.476000,7,1
+HW,esp32,indiv_verify,1,120.776000,119.732000,122.359000,7,1
+HW,esp32,msm_straus_short,1,130.452000,129.182000,131.727000,7,1
+HW,esp32,msm_straus_short,5,242.694000,238.849000,246.823000,7,1
+HW,esp32,msm_straus_short,10,381.193000,378.167000,383.199000,7,1
+HW,esp32,msm_pippenger,10,753.140000,744.439000,764.538000,7,1
+HW,esp32,msm_straus_short,25,799.148000,792.492000,807.193000,7,1
+HW,esp32,msm_pippenger,25,1356.624000,1353.874000,1366.171000,7,1
+HW,esp32,msm_straus_short,50,1419.762000,1414.760000,1427.337000,7,1
+HW,esp32,msm_pippenger,50,2188.862000,2184.905000,2191.985000,7,1
+DONE

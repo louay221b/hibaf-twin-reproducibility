@@ -1,0 +1,535 @@
+maude tool: 'maude'
+ checking version: 3.5. OK.
+ checking installation: OK.
+[Theory HiBaF_v2_enrol] Theory loaded
+[Theory HiBaF_v2_enrol] Theory translated
+[Theory HiBaF_v2_enrol] Derivation checks started
+[Theory HiBaF_v2_enrol] Derivation checks ended
+[Theory HiBaF_v2_enrol] Theory closed
+[Saturating Sources] Step 1 (Max 5)
+[Saturating Sources] Done
+theory HiBaF_v2_enrol begin
+
+// Function signature and definition of the equational theory E
+
+builtins: diffie-hellman
+functions: fst/1, h/1, pair/2, pk/1, sign/2, snd/1, true/0, verify/3
+equations:
+    fst(<x.1, x.2>) = x.1,
+    snd(<x.1, x.2>) = x.2,
+    verify(sign(x.1, x.2), x.1, pk(x.2)) = true
+
+
+
+
+
+
+
+
+
+
+
+rule (modulo E) Register_pk:
+   [ Fr( ~sk ) ]
+  --[ Registered( $A ) ]->
+   [ !Ltk( $A, ~sk ), !Pk( $A, pk(~sk) ), Out( pk(~sk) ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Reveal_ltk:
+   [ !Ltk( $A, sk ) ] --[ RevLtk( $A ) ]-> [ Out( sk ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) S_enrol_1:
+   [ Fr( ~a ), !Ltk( $S, skS ) ]
+  --[ Start( $S, $BE, 'g'^~a ) ]->
+   [
+   S_wait( $S, $BE, ~a ),
+   Out( <'e1', $S, $BE, 'g'^~a, sign(<'e1', $S, $BE, 'g'^~a>, skS)> )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) BE_enrol:
+   [
+   In( <'e1', $S, $BE, X, sigS> ), Fr( ~b ), !Ltk( $BE, skB ),
+   !Pk( $S, pkS )
+   ]
+  --[
+  Eq( verify(sigS, <'e1', $S, $BE, X>, pkS), true ),
+  BEEnrolled( $BE, $S, h(<'enrol', X^~b, $S, $BE, X, 'g'^~b>) ),
+  Running( $BE, $S, h(<'enrol', X^~b, $S, $BE, X, 'g'^~b>) )
+  ]->
+   [
+   Out( <'e2', $S, $BE, X, 'g'^~b, sign(<'e2', $S, $BE, X, 'g'^~b>, skB)> )
+   ]
+
+  /*
+  rule (modulo AC) BE_enrol:
+     [
+     In( <'e1', $S, $BE, X, sigS> ), Fr( ~b ), !Ltk( $BE, skB ),
+     !Pk( $S, pkS )
+     ]
+    --[
+    Eq( z, true ),
+    BEEnrolled( $BE, $S, h(<'enrol', z.1, $S, $BE, X, 'g'^~b>) ),
+    Running( $BE, $S, h(<'enrol', z.1, $S, $BE, X, 'g'^~b>) )
+    ]->
+     [
+     Out( <'e2', $S, $BE, X, 'g'^~b, sign(<'e2', $S, $BE, X, 'g'^~b>, skB)> )
+     ]
+    variants (modulo AC)
+     1. $BE   = $BE.20
+        $S    = $S.21
+        ~b    = ~b.22
+        X     = X.23
+        pkS   = pkS.24
+        sigS  = sigS.25
+        z     = verify(sigS.25, <'e1', $S.21, $BE.20, X.23>, pkS.24)
+        z.1   = X.23^~b.22
+    
+     2. $BE   = $BE.20
+        $S    = $S.21
+        X     = DH_neutral
+        pkS   = pkS.24
+        sigS  = sigS.25
+        z     = verify(sigS.25, <'e1', $S.21, $BE.20, DH_neutral>, pkS.24)
+        z.1   = DH_neutral
+    
+     3. $BE   = $BE.27
+        $S    = $S.28
+        ~b    = ~b.29
+        X     = z.39^inv(~b.29)
+        pkS   = pkS.31
+        sigS  = sigS.32
+        z     = verify(sigS.32, <'e1', $S.28, $BE.27, z.39^inv(~b.29)>, pkS.31)
+        z.1   = z.39
+    
+     4. $BE   = $BE.106
+        $S    = $S.107
+        ~b    = ~b.108
+        X     = x.209^x.210
+        pkS   = pkS.110
+        sigS  = sigS.111
+        z     = verify(sigS.111, <'e1', $S.107, $BE.106, x.209^x.210>, pkS.110)
+        z.1   = x.209^(~b.108*x.210)
+    
+     5. $BE   = $BE.107
+        $S    = $S.108
+        ~b    = ~b.109
+        X     = x.211^inv((~b.109*x.212))
+        pkS   = pkS.111
+        sigS  = sigS.112
+        z     = verify(sigS.112,
+                       <'e1', $S.108, $BE.107, x.211^inv((~b.109*x.212))>, pkS.111)
+        z.1   = x.211^inv(x.212)
+    
+     6. $BE   = $BE.107
+        $S    = $S.108
+        ~b    = ~b.109
+        X     = x.211^(x.212*inv(~b.109))
+        pkS   = pkS.111
+        sigS  = sigS.112
+        z     = verify(sigS.112,
+                       <'e1', $S.108, $BE.107, x.211^(x.212*inv(~b.109))>, pkS.111)
+        z.1   = x.211^x.212
+    
+     7. $BE   = $BE.108
+        $S    = $S.109
+        ~b    = ~b.110
+        X     = x.212^(x.213*inv((~b.110*x.214)))
+        pkS   = pkS.112
+        sigS  = sigS.113
+        z     = verify(sigS.113,
+                       <'e1', $S.109, $BE.108, x.212^(x.213*inv((~b.110*x.214)))>, pkS.112)
+        z.1   = x.212^(x.213*inv(x.214))
+    
+     8. $BE   = $BE.108
+        $S    = $S.109
+        X     = DH_neutral
+        pkS   = pk(x.214)
+        sigS  = sign(<'e1', $S.109, $BE.108, DH_neutral>, x.214)
+        z     = true
+        z.1   = DH_neutral
+    
+     9. $BE   = $BE.109
+        $S    = $S.110
+        ~b    = ~b.111
+        X     = X.112
+        pkS   = pk(x.216)
+        sigS  = sign(<'e1', $S.110, $BE.109, X.112>, x.216)
+        z     = true
+        z.1   = X.112^~b.111
+    
+    10. $BE   = $BE.109
+        $S    = $S.110
+        ~b    = ~b.111
+        X     = z.121^inv(~b.111)
+        pkS   = pk(x.216)
+        sigS  = sign(<'e1', $S.110, $BE.109, z.121^inv(~b.111)>, x.216)
+        z     = true
+        z.1   = z.121
+    
+    11. $BE   = $BE.110
+        $S    = $S.111
+        ~b    = ~b.112
+        X     = x.216^x.217
+        pkS   = pk(x.218)
+        sigS  = sign(<'e1', $S.111, $BE.110, x.216^x.217>, x.218)
+        z     = true
+        z.1   = x.216^(~b.112*x.217)
+    
+    12. $BE   = $BE.110
+        $S    = $S.111
+        ~b    = ~b.112
+        X     = x.216^inv((~b.112*x.217))
+        pkS   = pk(x.218)
+        sigS  = sign(<'e1', $S.111, $BE.110, x.216^inv((~b.112*x.217))>, x.218)
+        z     = true
+        z.1   = x.216^inv(x.217)
+    
+    13. $BE   = $BE.110
+        $S    = $S.111
+        ~b    = ~b.112
+        X     = x.216^(x.217*inv(~b.112))
+        pkS   = pk(x.218)
+        sigS  = sign(<'e1', $S.111, $BE.110, x.216^(x.217*inv(~b.112))>, x.218)
+        z     = true
+        z.1   = x.216^x.217
+    
+    14. $BE   = $BE.111
+        $S    = $S.112
+        ~b    = ~b.113
+        X     = x.217^(x.218*inv((~b.113*x.219)))
+        pkS   = pk(x.220)
+        sigS  = sign(<'e1', $S.112, $BE.111, x.217^(x.218*inv((~b.113*x.219)))>,
+                     x.220)
+        z     = true
+        z.1   = x.217^(x.218*inv(x.219))
+  */
+
+rule (modulo E) S_enrol_2:
+   [
+   S_wait( $S, $BE, ~a ), In( <'e2', $S, $BE, 'g'^~a, Y, sigB> ),
+   !Pk( $BE, pkB )
+   ]
+  --[
+  Eq( verify(sigB, <'e2', $S, $BE, 'g'^~a, Y>, pkB), true ),
+  SEnrolled( $S, $BE, h(<'enrol', Y^~a, $S, $BE, 'g'^~a, Y>) ),
+  Commit( $S, $BE, h(<'enrol', Y^~a, $S, $BE, 'g'^~a, Y>) )
+  ]->
+   [ ]
+
+  /*
+  rule (modulo AC) S_enrol_2:
+     [
+     S_wait( $S, $BE, ~a ), In( <'e2', $S, $BE, 'g'^~a, Y, sigB> ),
+     !Pk( $BE, pkB )
+     ]
+    --[
+    Eq( z, true ),
+    SEnrolled( $S, $BE, h(<'enrol', z.1, $S, $BE, 'g'^~a, Y>) ),
+    Commit( $S, $BE, h(<'enrol', z.1, $S, $BE, 'g'^~a, Y>) )
+    ]->
+     [ ]
+    variants (modulo AC)
+     1. $BE   = $BE.18
+        $S    = $S.19
+        ~a    = ~a.20
+        Y     = Y.21
+        pkB   = pkB.22
+        sigB  = sigB.23
+        z     = verify(sigB.23, <'e2', $S.19, $BE.18, 'g'^~a.20, Y.21>, pkB.22)
+        z.1   = Y.21^~a.20
+    
+     2. $BE   = $BE.18
+        $S    = $S.19
+        ~a    = ~a.20
+        Y     = DH_neutral
+        pkB   = pkB.22
+        sigB  = sigB.23
+        z     = verify(sigB.23, <'e2', $S.19, $BE.18, 'g'^~a.20, DH_neutral>,
+                       pkB.22)
+        z.1   = DH_neutral
+    
+     3. $BE   = $BE.23
+        $S    = $S.24
+        ~a    = ~a.25
+        Y     = z.33^inv(~a.25)
+        pkB   = pkB.27
+        sigB  = sigB.28
+        z     = verify(sigB.28,
+                       <'e2', $S.24, $BE.23, 'g'^~a.25, z.33^inv(~a.25)>, pkB.27)
+        z.1   = z.33
+    
+     4. $BE   = $BE.80
+        $S    = $S.81
+        ~a    = ~a.82
+        Y     = x.157^x.158
+        pkB   = pkB.84
+        sigB  = sigB.85
+        z     = verify(sigB.85, <'e2', $S.81, $BE.80, 'g'^~a.82, x.157^x.158>,
+                       pkB.84)
+        z.1   = x.157^(~a.82*x.158)
+    
+     5. $BE   = $BE.81
+        $S    = $S.82
+        ~a    = ~a.83
+        Y     = x.159^inv((~a.83*x.160))
+        pkB   = pkB.85
+        sigB  = sigB.86
+        z     = verify(sigB.86,
+                       <'e2', $S.82, $BE.81, 'g'^~a.83, x.159^inv((~a.83*x.160))>, pkB.85)
+        z.1   = x.159^inv(x.160)
+    
+     6. $BE   = $BE.81
+        $S    = $S.82
+        ~a    = ~a.83
+        Y     = x.159^(x.160*inv(~a.83))
+        pkB   = pkB.85
+        sigB  = sigB.86
+        z     = verify(sigB.86,
+                       <'e2', $S.82, $BE.81, 'g'^~a.83, x.159^(x.160*inv(~a.83))>, pkB.85)
+        z.1   = x.159^x.160
+    
+     7. $BE   = $BE.82
+        $S    = $S.83
+        ~a    = ~a.84
+        Y     = DH_neutral
+        pkB   = pk(x.162)
+        sigB  = sign(<'e2', $S.83, $BE.82, 'g'^~a.84, DH_neutral>, x.162)
+        z     = true
+        z.1   = DH_neutral
+    
+     8. $BE   = $BE.82
+        $S    = $S.83
+        ~a    = ~a.84
+        Y     = x.160^(x.161*inv((~a.84*x.162)))
+        pkB   = pkB.86
+        sigB  = sigB.87
+        z     = verify(sigB.87,
+                       <'e2', $S.83, $BE.82, 'g'^~a.84, x.160^(x.161*inv((~a.84*x.162)))>,
+                       pkB.86)
+        z.1   = x.160^(x.161*inv(x.162))
+    
+     9. $BE   = $BE.83
+        $S    = $S.84
+        ~a    = ~a.85
+        Y     = Y.86
+        pkB   = pk(x.164)
+        sigB  = sign(<'e2', $S.84, $BE.83, 'g'^~a.85, Y.86>, x.164)
+        z     = true
+        z.1   = Y.86^~a.85
+    
+    10. $BE   = $BE.83
+        $S    = $S.84
+        ~a    = ~a.85
+        Y     = z.93^inv(~a.85)
+        pkB   = pk(x.164)
+        sigB  = sign(<'e2', $S.84, $BE.83, 'g'^~a.85, z.93^inv(~a.85)>, x.164)
+        z     = true
+        z.1   = z.93
+    
+    11. $BE   = $BE.84
+        $S    = $S.85
+        ~a    = ~a.86
+        Y     = x.164^x.165
+        pkB   = pk(x.166)
+        sigB  = sign(<'e2', $S.85, $BE.84, 'g'^~a.86, x.164^x.165>, x.166)
+        z     = true
+        z.1   = x.164^(~a.86*x.165)
+    
+    12. $BE   = $BE.84
+        $S    = $S.85
+        ~a    = ~a.86
+        Y     = x.164^inv((~a.86*x.165))
+        pkB   = pk(x.166)
+        sigB  = sign(<'e2', $S.85, $BE.84, 'g'^~a.86, x.164^inv((~a.86*x.165))>,
+                     x.166)
+        z     = true
+        z.1   = x.164^inv(x.165)
+    
+    13. $BE   = $BE.84
+        $S    = $S.85
+        ~a    = ~a.86
+        Y     = x.164^(x.165*inv(~a.86))
+        pkB   = pk(x.166)
+        sigB  = sign(<'e2', $S.85, $BE.84, 'g'^~a.86, x.164^(x.165*inv(~a.86))>,
+                     x.166)
+        z     = true
+        z.1   = x.164^x.165
+    
+    14. $BE   = $BE.85
+        $S    = $S.86
+        ~a    = ~a.87
+        Y     = x.165^(x.166*inv((~a.87*x.167)))
+        pkB   = pk(x.168)
+        sigB  = sign(<'e2', $S.86, $BE.85, 'g'^~a.87, 
+                      x.165^(x.166*inv((~a.87*x.167)))>,
+                     x.168)
+        z     = true
+        z.1   = x.165^(x.166*inv(x.167))
+  */
+
+restriction equality:
+  "∀ x y #i. (Eq( x, y ) @ #i) ⇒ (x = y)"
+  // safety formula
+
+lemma executable:
+  exists-trace
+  "∃ S BE K #i.
+    (SEnrolled( S, BE, K ) @ #i) ∧ (¬(∃ A #r. RevLtk( A ) @ #r))"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ S BE K #i.
+  (SEnrolled( S, BE, K ) @ #i) ∧ ∀ A #r. (RevLtk( A ) @ #r) ⇒ ⊥"
+*/
+simplify
+solve( S_wait( $S, $BE, ~a ) ▶₀ #i )
+  case S_enrol_1
+  solve( !Pk( $BE, pk(x) ) ▶₂ #i )
+    case Register_pk
+    solve( !KU( sign(<'e2', $S, $BE, 'g'^~a, Y>, ~sk) ) @ #vk.10 )
+      case BE_enrol
+      solve( !KU( sign(<'e1', $S, $BE, 'g'^~a>, ~sk.2) ) @ #vk.16 )
+        case S_enrol_1
+        solve( !KU( 'g'^~a ) @ #vk.13 )
+          case S_enrol_1
+          solve( !KU( 'g'^~b ) @ #vk.15 )
+            case BE_enrol
+            SOLVED // trace found
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma enrol_key_secrecy_pfs:
+  all-traces
+  "∀ S BE K #i #j.
+    ((SEnrolled( S, BE, K ) @ #i) ∧ (K( K ) @ #j)) ⇒
+    ((∃ #r. (RevLtk( S ) @ #r) ∧ (#r < #i)) ∨
+     (∃ #r. (RevLtk( BE ) @ #r) ∧ (#r < #i)))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S BE K #i #j.
+  (SEnrolled( S, BE, K ) @ #i) ∧ (K( K ) @ #j)
+ ∧
+  (∀ #r. (RevLtk( S ) @ #r) ⇒ ¬(#r < #i)) ∧
+  (∀ #r. (RevLtk( BE ) @ #r) ⇒ ¬(#r < #i))"
+*/
+simplify
+solve( S_wait( $S, $BE, ~a ) ▶₀ #i )
+  case S_enrol_1
+  solve( !Pk( $BE, pk(x) ) ▶₂ #i )
+    case Register_pk
+    solve( !KU( h(<'enrol', z, $S, $BE, 'g'^~a, Y>) ) @ #vk.11 )
+      case c_h
+      solve( !KU( sign(<'e2', $S, $BE, 'g'^~a, Y>, ~sk) ) @ #vk.14 )
+        case BE_enrol
+        solve( !KU( sign(<'e1', $S, $BE, 'g'^~a>, ~sk.2) ) @ #vk.24 )
+          case S_enrol_1
+          solve( !KU( 'g'^(~a*~b) ) @ #vk.23 )
+            case BE_enrol
+            by solve( !KU( ~a ) @ #vk.25 )
+          next
+            case S_enrol_1
+            by solve( !KU( ~b ) @ #vk.25 )
+          next
+            case c_exp
+            by solve( !KU( ~a ) @ #vk.27 )
+          qed
+        next
+          case c_sign
+          solve( !KU( ~sk.2 ) @ #vk.28 )
+            case Reveal_ltk
+            by contradiction /* from formulas */
+          qed
+        qed
+      next
+        case c_sign
+        solve( !KU( ~sk ) @ #vk.20 )
+          case Reveal_ltk
+          by contradiction /* from formulas */
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma enrol_agreement:
+  all-traces
+  "∀ S BE K #i.
+    (Commit( S, BE, K ) @ #i) ⇒
+    (((∃ #j. (Running( BE, S, K ) @ #j) ∧ (#j < #i)) ∨
+      (∃ #r. (RevLtk( BE ) @ #r) ∧ (#r < #i))) ∨
+     (∃ #r. (RevLtk( S ) @ #r) ∧ (#r < #i)))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S BE K #i.
+  (Commit( S, BE, K ) @ #i)
+ ∧
+  (∀ #j. (Running( BE, S, K ) @ #j) ⇒ ¬(#j < #i)) ∧
+  (∀ #r. (RevLtk( BE ) @ #r) ⇒ ¬(#r < #i)) ∧
+  (∀ #r. (RevLtk( S ) @ #r) ⇒ ¬(#r < #i))"
+*/
+simplify
+solve( S_wait( $S, $BE, ~a ) ▶₀ #i )
+  case S_enrol_1
+  solve( !Pk( $BE, pk(x) ) ▶₂ #i )
+    case Register_pk
+    solve( !KU( sign(<'e2', $S, $BE, 'g'^~a, Y>, ~sk) ) @ #vk.10 )
+      case BE_enrol
+      by contradiction /* from formulas */
+    next
+      case c_sign
+      solve( !KU( ~sk ) @ #vk.15 )
+        case Reveal_ltk
+        by contradiction /* from formulas */
+      qed
+    qed
+  qed
+qed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.10.0
+Maude version 3.5
+Git revision: cb62c305f8c8b8c1e664152aa33c95b7b8d5ef32, branch: master
+Compiled at: 2024-10-30 11:11:02.432289291 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: hibaf_v2_enrol.spthy
+
+  processing time: 1.99s
+  
+  executable (exists-trace): verified (8 steps)
+  enrol_key_secrecy_pfs (all-traces): verified (14 steps)
+  enrol_agreement (all-traces): verified (7 steps)
+
+==============================================================================

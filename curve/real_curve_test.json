@@ -1,0 +1,9 @@
+{
+ "individual_verify_all_valid": true,
+ "encoding_bytes_U": 64,
+ "encoding_roundtrip": true,
+ "batch_all_valid": true,
+ "batch_detects_invalid_5_trials": 5,
+ "noncanonical_rejected": true,
+ "offcurve_rejected": true
+}
