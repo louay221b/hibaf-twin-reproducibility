@@ -9,7 +9,9 @@
  Hence #J = q, and every D != O generates J."""
 import json, subprocess, sys
 from math import isqrt
-sys.path.insert(0, "/home/claude/audit")
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "reference_model"))
 from g2toy import Jacobian
 p = 2**127 - 2437
 q = 28948022309329048851997888041834683414494990511282909948355135430626685929581
@@ -47,4 +49,5 @@ out["q_bits"] = q.bit_length()
 out["order_equals_q_proved"] = all(out[k] for k in ["q_prime_ecpp_certificate_valid", "curve_nonsingular", "L_on_curve",
                                     "L_not_identity", "qL_is_identity_python", "q_in_hasse_weil_interval", "two_q_exceeds_upper_bound"])
 print(json.dumps(out, indent=1))
-json.dump(out, open("order_certificate_check.json", "w"), indent=1)
+with (Path(__file__).resolve().parent / "order_certificate_check.json").open("w", encoding="utf-8") as fh:
+    json.dump(out, fh, indent=1)
