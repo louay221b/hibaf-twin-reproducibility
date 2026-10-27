@@ -6,7 +6,14 @@ from multiprocessing import Pool
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-BIN = os.environ.get("HIBAF_NS3_BIN", str(ROOT / "ns-3.49" / "build" / "scratch" / "hibaf" / "ns3.49-hibaf-sim-optimized"))
+# Allow ns-3 build profiles and Windows executable suffixes without changing scenario inputs.
+_NS3_DIR = ROOT / "ns-3.49" / "build" / "scratch" / "hibaf"
+_NS3_CANDIDATES = [
+    _NS3_DIR / (name + suffix)
+    for name in ("ns3.49-hibaf-sim-optimized", "ns3.49-hibaf-sim-default", "ns3.49-hibaf-sim-debug")
+    for suffix in ("", ".exe")
+]
+BIN = os.environ.get("HIBAF_NS3_BIN") or str(next((p for p in _NS3_CANDIDATES if p.is_file()), _NS3_CANDIDATES[0]))
 OUT = os.environ.get("HIBAF_RUNS_DIR", str(ROOT / "runs"))
 SEEDS = range(1, 31)
 
@@ -61,7 +68,8 @@ def run(a):
     t = time.time()
     r = subprocess.run(args, capture_output=True, text=True)
     if r.returncode != 0:
-        open(os.path.join(d, "error.txt"), "w").write(r.stderr[-4000:])
+        Path(d, "error.txt").write_text(r.stderr[-4000:], encoding="utf-8")
+        raise RuntimeError(f"ns-3 failed ({r.returncode}) for {name(a)}; see {Path(d, 'error.txt')}")
     return time.time() - t
 
 if __name__ == "__main__":

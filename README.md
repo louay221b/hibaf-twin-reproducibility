@@ -140,3 +140,11 @@ Emulated estimates are not hardware measurements.
 ## Portable analytical evaluation
 
 The analytical scripts now locate inputs relative to this repository rather than using developer-specific absolute paths. See [analytic/README.md](analytic/README.md) for dependencies, commands, generated outputs and evidence boundaries.
+
+## Reviewer quick start (cross-platform, non-destructive)
+
+Clone the repository and enter its root. For Python verification use Python 3.10+ and install `cryptography`, `sympy`, `numpy`, `pandas`, `scipy` and `matplotlib` in a virtual environment. Linux / WSL: `python3 -m venv .venv && . .venv/bin/activate && python -m pip install cryptography sympy numpy pandas scipy matplotlib`. Windows PowerShell: `py -3 -m venv .venv; .\\.venv\\Scripts\\Activate.ps1; python -m pip install cryptography sympy numpy pandas scipy matplotlib`.
+
+To verify the **35 reference-model checks** without regenerating any experimental dataset, run `python reference_model/test_hibaf_v2.py` from the repository root. This suite is also configured in GitHub Actions on both Ubuntu and Windows. The checked-in `reference_model/test_output.txt` is an **archived** test transcript, not evidence of a fresh test execution. The expensive curve validations, simulation campaigns, and physical-device benchmarks are separate procedures; see [curve/README.md](curve/README.md), [campaign/README.md](campaign/README.md), [platform/README.md](platform/README.md), and [hardware_harness/README.md](hardware_harness/README.md).
+
+**Evidence provenance:** `results/tables/` and `results/figures/` contain archived ns-3 simulation outcomes; `platform/` outputs are emulator-based estimates; `hardware_harness/results/` contains actual Raspberry Pi 4 and ESP32 measurement logs; `tamarin/` contains symbolic models and archived verification logs; `reference_model/` is executable correctness/security regression testing. Running the lightweight Python suite does **not** independently reproduce hardware timings, ns-3 results, or Tamarin proofs. No external source, compiler, plugin, simulator, or measurement setup is implicitly supplied by this repository.

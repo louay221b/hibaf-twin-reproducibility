@@ -22,6 +22,8 @@ def jobs():
             dict(nSensors=100, reportInterval=0.5, attackRate=2, defenses=0, attackStart=20, warmup=20, drain=10, simTime=70, **pv))
     return J
 if __name__ == "__main__":
+    if not C0.Path(C0.BIN).is_file():
+        raise SystemExit(f"ns-3 binary not found: {C0.BIN}. Build ns-3.49 or set HIBAF_NS3_BIN.")
     J = jobs(); J.sort(key=lambda a: -(a.get("nSensors", 100) / a.get("reportInterval", 10)))
     print(len(J), "jobs", flush=True); done = 0; t0 = time.time()
     with Pool(int(sys.argv[1]) if len(sys.argv) > 1 else 2) as p:

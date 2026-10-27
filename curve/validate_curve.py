@@ -1,6 +1,9 @@
 """Independent checks of the HiBaF-Twin curve C: y^2 = x^5 + 8 over F_p, p = 2^127 - 2437."""
 import sys, json, math, random
-import os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "reference_model")); sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from pathlib import Path
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "reference_model"))
+sys.path.insert(0, str(HERE))
 from sympy import isprime, factorint, primerange
 from sympy.ntheory import sqrt_mod
 from g2toy import Jacobian, bsgs_order_in
@@ -26,7 +29,8 @@ R["cm_candidates_contain_true_order_small_fields"] = f"{ok}/{tested}"
 print("1. CM candidate set contains brute-force order:", R["cm_candidates_contain_true_order_small_fields"])
 
 # ---- 2. certified parameters
-c = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "curve.json")))
+with (HERE / "curve.json").open(encoding="utf-8") as fh:
+    c = json.load(fh)
 p, a, N = c["p"], c["a"], c["N"]
 assert p == 2**127 - 2437 and isprime(p) and p % 5 == 1
 assert isprime(N)
@@ -87,4 +91,5 @@ assert L != J.O and J.mul(N, L) == J.O
 u, v = list(L[0]), list(L[1])
 R["generator_L"] = dict(u=[str(t) for t in u], v=[str(t) for t in v], from_points=[[str(t) for t in q] for q in xs])
 print("7. generator L = P(x=%d) + P(x=%d): u =" % (xs[0][0], xs[1][0]), u, "v =", v)
-json.dump(R, open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "curve_validation.json"), "w"), indent=1)
+with (HERE / "curve_validation.json").open("w", encoding="utf-8") as fh:
+    json.dump(R, fh, indent=1)

@@ -28,3 +28,7 @@ python3 platform/a72_mca.py
 The `bench.c` benchmark also supports an ESP32 QEMU build with the Xtensa toolchain; see the top-level README for the exact compile and emulator command. Results in `esp32_run.txt` were measured using emulation, and **must not be presented as physical ESP32 timings**.
 
 Hardware sources and measured timings are available separately in `hardware_harness/esp32_idf/`, `hardware_harness/raspberry_pi/`, and `hardware_harness/results/`.
+
+## Operating-system scope and archived evidence
+
+The C sources are portable, but cross-compilation, QEMU user-mode plugins, LLVM analysis, and the shell runner require a Linux/WSL environment with compatible toolchains. On Windows, invoke these steps inside WSL rather than assuming native PowerShell can execute the ELF binary or `.so` plugins. This repository does not include `libinsn.so` or `libhotblocks.so`; their acquisition/build and QEMU compatibility remain external prerequisites. Set plugin variables to real files; the scripts fail clearly if absent. Existing emulator logs and JSON outputs remain archived and should not be silently overwritten when checking portability.
