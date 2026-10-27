@@ -7,7 +7,7 @@ from multiprocessing import Pool
 import campaign as C0
 import itertools
 
-# emulated platform costs (ms per 254-bit scalar multiplication), plat/platform_estimates.json
+# emulated platform costs (ms per 254-bit scalar multiplication), platform/platform_estimates.json
 PLAT = {"emuLow": dict(tHecmSensor=65.82, tHecmCol=1.12, tHecmSt=1.12),
         "emuHigh": dict(tHecmSensor=98.74, tHecmCol=2.78, tHecmSt=2.78)}
 
