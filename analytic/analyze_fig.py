@@ -3,16 +3,17 @@
 Hedges' g for HiBaF-MSM vs. each baseline, and draw publication figures.
 Every number in the figures and tables comes from runs/*/summary.csv."""
 import glob, os, sys
+from pathlib import Path
 import numpy as np, pandas as pd
 from scipy import stats
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-ROOT = "/home/claude/sim"
-FIG = os.path.join(ROOT, "figures_generic"); os.makedirs(FIG, exist_ok=True)
-TAB = os.path.join(ROOT, "tables")
-TABOUT = os.path.join(ROOT, "tables_generic"); os.makedirs(TABOUT, exist_ok=True)
+ROOT = Path(__file__).resolve().parents[1]
+FIG = ROOT / "analytic" / "figures_generic"; FIG.mkdir(parents=True, exist_ok=True)
+TAB = ROOT / "results" / "tables"
+TABOUT = ROOT / "analytic" / "tables_generic"; TABOUT.mkdir(parents=True, exist_ok=True)
 
 D = pd.read_csv(os.path.join(TAB, "all_runs_original_3510.csv"))   # archived campaign (figures only)
 print(len(D), "runs merged")

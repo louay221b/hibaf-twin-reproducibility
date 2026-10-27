@@ -108,3 +108,7 @@ The hardware-harness ZIP is also unpacked in this repository for direct inspecti
 - **Original measurement data:** `hardware_harness/results/`. `QEMU_SMOKE_TEST_NOT_HARDWARE.log` is an emulator check, **not a hardware timing measurement**.
 
 The reference model includes the pending-duplicate regression check: `python reference_model/test_hibaf_v2.py` (requires the Python `cryptography` package), expected `35/35 checks passed`.
+
+## Portable analytical evaluation
+
+The analytical scripts now locate inputs relative to this repository rather than using developer-specific absolute paths. See [analytic/README.md](analytic/README.md) for dependencies, commands, generated outputs and evidence boundaries.

@@ -8,14 +8,18 @@
 Costs are in HECM units from the measured ratio curve (audit/bench_g2_127_calibration.json).
 Seed 20260603 and 10 000 windows per configuration, as in the draft."""
 import json, math, os
+from pathlib import Path
 import numpy as np, pandas as pd
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-OUT = "/home/claude/sim/analytic"; os.makedirs(OUT, exist_ok=True)
+ROOT = Path(__file__).resolve().parents[1]
+OUT = ROOT / "analytic"
+OUT.mkdir(parents=True, exist_ok=True)
 SEED, NW = 20260603, 10_000
 BATCH = [10, 50, 100, 500]; MU = [0.0, 0.01, 0.05, 0.10, 0.25]; REPLAY = [0.0, 0.10, 0.25, 0.50]
-cal = json.load(open("/home/claude/audit/bench_g2_127_calibration.json"))
+with (ROOT / "crypto_level1" / "bench_g2_127_calibration.json").open(encoding="utf-8") as fh:
+    cal = json.load(fh)
 C1 = cal["rows"][0]["rho_indiv_total_over_hecm"]            # 2-term Straus individual verification (1.152)
 pts = sorted((r["n"], r["rho_best_over_hecm"]) for r in cal["rows"])
 _ln = np.log([p[0] for p in pts]); _lc = np.log([p[1] for p in pts])
