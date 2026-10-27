@@ -627,19 +627,37 @@ struct Collector
         }
         uint32_t take = std::min<uint32_t>(q.size(), C.variant == "msm" ? std::max<uint32_t>(b, 1) : 512);
         if (C.variant == "msm" && take < b)
-        { // fewer than planned (timer flush): re-decide g for actual size
-            g = 1;
+        {
+            const double budget =
+                C.budgetTime * 1000.0 / C.tHecmCol;
+
             double best = 1e18;
+            bool found = false;
+
             for (uint32_t gg : {1u, 2u, 4u, 8u, 16u})
-                if (gg <= take)
+            {
+                if (gg > take || take % gg != 0)
+                    continue;
+
+                if (take > 1 && ctrl.Worst(take, gg) > budget)
+                    continue;
+
+                double cost = ctrl.Expected(take, gg);
+
+                if (cost < best)
                 {
-                    double c = ctrl.Expected(take, gg);
-                    if (c < best)
-                    {
-                        best = c;
-                        g = gg;
-                    }
+                    best = cost;
+                    g = gg;
+                    found = true;
                 }
+            }
+
+            if (!found)
+            {
+                // Fall back to one individual verification
+                take = 1;
+                g = 1;
+            }
         }
         std::vector<Pending> batch(q.begin(), q.begin() + take);
         q.erase(q.begin(), q.begin() + take);
