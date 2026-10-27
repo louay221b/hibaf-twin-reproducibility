@@ -27,7 +27,10 @@ cd ns-3.49 && ./ns3 configure --build-profile=optimized \
   --disable-examples --disable-tests --disable-python && ./ns3 build hibaf-sim
 # single run
 ./build/scratch/hibaf/ns3.49-hibaf-sim-optimized --variant=msm --nSensors=100 --out=/tmp/r
-# campaign (edit BIN/OUT paths at the top of campaign.py); about 3 h on 2 cores
+# Return to the repository root before starting the campaign:
+cd ..
+# Campaign defaults: binary under ns-3.49/build/..., run summaries under runs/.
+# Override with HIBAF_NS3_BIN and HIBAF_RUNS_DIR when needed.
 python3 campaign/campaign.py 2 && python3 campaign/analyze.py
 
 # Level 1 and reference model (Python 3, numpy, pandas, matplotlib, scipy, cryptography)
@@ -108,6 +111,31 @@ The hardware-harness ZIP is also unpacked in this repository for direct inspecti
 - **Original measurement data:** `hardware_harness/results/`. `QEMU_SMOKE_TEST_NOT_HARDWARE.log` is an emulator check, **not a hardware timing measurement**.
 
 The reference model includes the pending-duplicate regression check: `python reference_model/test_hibaf_v2.py` (requires the Python `cryptography` package), expected `35/35 checks passed`.
+
+## Portable ns-3 campaigns and curve verification
+
+The campaign scripts discover the ns-3.49 executable in `ns-3.49/build/scratch/hibaf/`
+relative to the repository root and write raw run summaries under `runs/`.
+Use `HIBAF_NS3_BIN` for a custom executable, and `HIBAF_RUNS_DIR`
+to choose an alternative location for the run directories. The same run directory
+is used by `campaign/analyze.py`, `analyze_rev.py`, `analyze_hw.py`
+and `analyze_pi.py`. Python dependencies include `numpy`, `pandas`,
+`matplotlib` and `scipy`; compiling ns-3.49 also requires the relevant
+ns-3 toolchain and modules.
+
+```bash
+python3 curve/validate_curve.py
+python3 curve/real_curve_test.py
+python3 curve/cert/certify_order.py  # also requires PARI/GP executable 'gp'
+```
+
+The curve checks use the included Jacobian model and JSON files, with paths
+resolved from the scripts rather than the working directory.
+
+For Cortex-A72 QEMU measurements, first build `platform/bench_a72`
+and supply the separately built QEMU plugins. See
+[platform/README.md](platform/README.md) for the required environment variables.
+Emulated estimates are not hardware measurements.
 
 ## Portable analytical evaluation
 
