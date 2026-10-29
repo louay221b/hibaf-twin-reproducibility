@@ -27,3 +27,13 @@ Or rebuild from source: `cd esp32_idf && idf.py set-target esp32 build flash mon
 
 `QEMU_SMOKE_TEST_NOT_HARDWARE.log` shows the firmware running in Espressif's QEMU. It only
 validates the program; its timings are emulator wall-clock and are NOT hardware measurements.
+
+### ESP32 AES-GCM microbenchmark
+
+The ESP32 source now includes `bench_gcm_tag()`, called after the genus-2 benchmarks by `app_main()`. It uses ESP-IDF's Mbed TLS GCM API to time AES-128-GCM encryption **plus tag generation** on an 8-byte plaintext and 160-byte AAD buffer, with a 96-bit nonce and 128-bit tag.
+
+The harness reports seven samples, each averaging 1,000 calls, using its standard CSV format:
+`HW,esp32,gcm_tag_8B_ad160,0,<median_ms>,<min_ms>,<max_ms>,7,1000`.
+The 7,000 total operations are benchmark repetitions, **not 7,000 ns-3 simulations or an additional correctness/attack check**. Outputs in `hardware_harness/results/esp32_results.txt` predate this addition; reflash and collect a new physical ESP32 log before claiming a measured value.
+
+For timing only, the same fixed key, nonce, plaintext and AAD are reused; ciphertext/tag values are not published. This is **not** a permissible nonce-use pattern for genuine sensor measurements. Rebuild with ESP-IDF (the component now declares `mbedtls` as a private dependency), then flash and monitor as described above.
