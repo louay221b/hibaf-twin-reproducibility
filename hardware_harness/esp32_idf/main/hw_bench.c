@@ -16,6 +16,7 @@
 
 #if defined(ESP_PLATFORM)
 #include "esp_timer.h"
+#include "mbedtls/gcm.h"
 #include "esp_private/esp_clk.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -52,6 +53,55 @@ static void report(const char *op, int n, double *t, int ops) {
     qsort(t, REPEAT, sizeof(double), cmpd);
     printf("HW,%s,%s,%d,%.6f,%.6f,%.6f,%d,%d\n", PLATFORM, op, n, t[REPEAT/2] / ops, t[0] / ops, t[REPEAT-1] / ops, REPEAT, ops);
 }
+
+#if defined(ESP_PLATFORM)
+/*
+ * Isolated AES-128-GCM timing benchmark: an 8-byte input and 160 bytes of AAD.
+ * Measures a full encryption + tag generation (not a tag-only operation).
+ * The fixed key/nonce and repeated identical plaintext are ONLY for timing;
+ * real sensor reports must use unique nonces under a given GCM key.
+ * Seven timed samples of 1000 calls each use the existing CSV report format.
+ */
+static void bench_gcm_tag(void) {
+    mbedtls_gcm_context g;
+    unsigned char key[16] = {0}, iv[12] = {0};
+    unsigned char ad[160] = {0}, pt[8] = {0}, ct[8], tag[16];
+    const int n = 1000;
+    double elapsed_ms[REPEAT];
+    mbedtls_gcm_init(&g);
+
+    int rc = mbedtls_gcm_setkey(&g, MBEDTLS_CIPHER_ID_AES, key, 128);
+    if (rc != 0) {
+        printf("ERROR,esp32,gcm_tag_8B_ad160,setkey,%d\\n", rc);
+        mbedtls_gcm_free(&g);
+        return;
+    }
+
+    for (int r = 0; r < REPEAT; ++r) {
+        int64_t t0 = esp_timer_get_time();
+        for (int i = 0; i < n; ++i) {
+            rc = mbedtls_gcm_crypt_and_tag(
+                &g, MBEDTLS_GCM_ENCRYPT, sizeof(pt),
+                iv, sizeof(iv), ad, sizeof(ad),
+                pt, ct, sizeof(tag), tag
+            );
+            if (rc != 0) break;
+        }
+        int64_t t1 = esp_timer_get_time();
+        if (rc != 0) {
+            printf("ERROR,esp32,gcm_tag_8B_ad160,encrypt,%d\\n", rc);
+            mbedtls_gcm_free(&g);
+            return;
+        }
+        elapsed_ms[r] = (double)(t1 - t0) / 1000.0;
+        yield_wdt();
+    }
+
+    report("gcm_tag_8B_ad160", 0, elapsed_ms, n);
+    mbedtls_gcm_free(&g);
+}
+#endif
+
 static int ilog2(int m) { int r = 0; while ((1 << (r+1)) <= m) r++; return r; }
 
 static int selftest(void) {
@@ -107,6 +157,7 @@ void app_main(void) {
     printf("HiBaF-Twin hardware benchmark, CPU %d MHz\n", (int)(esp_clk_cpu_freq() / 1000000));
     if (selftest()) { printf("DONE,FAIL\n"); return; }
     bench_all(50);
+    bench_gcm_tag();
     printf("DONE\n");
 }
 #else
