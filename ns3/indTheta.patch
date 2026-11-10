@@ -1,0 +1,27 @@
+--- /home/claude/ns3/ns-3.49/scratch/hibaf/hibaf-sim.cc	2026-10-29 00:35:07.001754855 +0100
++++ /home/claude/ns3/ns-3.49/scratch/hibaf_th/hibaf-sim.cc	2026-11-08 20:01:41.685374537 +0100
+@@ -53,6 +53,7 @@
+     uint32_t nSensors = 100, perPond = 25;
+     double reportInterval = 10.0, window = 30.0, simTime = 330.0, warmup = 30.0, drain = 15.0;
+     double theta = 0.25, radius = 25.0, deadline = 2.0;
++    double indTheta = -1.0; // sensitivity option: audit rate for variant ind (-1 keeps the original theta = 1)
+     uint32_t beaconRepeats = 3;
+     double beaconSpacing = 0.15;
+     std::string wanRate = "10Mbps";
+@@ -1014,7 +1015,7 @@
+         for (uint32_t i = 0; i < n; ++i)
+             recs.push_back(Get<Rec>(d + 1 + 4 + i * sizeof(Rec)));
+         // station signature + per report KDF/AEAD + theta audit
+-        double theta = C.variant == "ind" ? 1.0 : (C.variant == "sym" ? 0.0 : C.theta);
++        double theta = C.variant == "ind" ? (C.indTheta >= 0 ? C.indTheta : 1.0) : (C.variant == "sym" ? 0.0 : C.theta);
+         uint32_t a = 0;
+         for (uint32_t i = 0; i < n; ++i)
+             a += rv->GetValue() < theta;
+@@ -1125,6 +1126,7 @@
+     cmd.AddValue("warmup", "s", C.warmup);
+     cmd.AddValue("drain", "s without new reports at the end", C.drain);
+     cmd.AddValue("theta", "BE audit rate", C.theta);
++    cmd.AddValue("indTheta", "audit rate for ind (-1 = original 1.0)", C.indTheta);
+     cmd.AddValue("radius", "sensor placement radius m", C.radius);
+     cmd.AddValue("deadline", "DT freshness deadline s", C.deadline);
+     cmd.AddValue("beaconRepeats", "beacon rebroadcasts", C.beaconRepeats);

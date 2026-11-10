@@ -1,0 +1,33 @@
+== A2
+msm BE=0.10 (published)            n=30 pdr=0.5567±0.011 syncSuccess=0.5567±0.011 e2eMean=0.2894±0.00042 e2eP95=0.3634±0.00033 colCpuUtil=0.04902±0.00082 hecmPerVerified=0.4791±0.00092
+msm BE=1.19 (new)                  n=30 pdr=0.5567±0.011 syncSuccess=0.5567±0.011 e2eMean=0.2938±0.00045 e2eP95=0.3678±0.00032 colCpuUtil=0.04902±0.00082 hecmPerVerified=0.4791±0.00092
+msm BE=0.86 (new)                  n=30 pdr=0.5567±0.011 syncSuccess=0.5567±0.011 e2eMean=0.2925±0.00044 e2eP95=0.3665±0.00033 colCpuUtil=0.04902±0.00082 hecmPerVerified=0.4791±0.00092
+base BE=0.10 (published)           n=30 pdr=0.5614±0.0083 syncSuccess=0.5613±0.0083 e2eMean=0.321±0.0005 e2eP95=0.395±0.00039 colCpuUtil=0.1794±0.0024 hecmPerVerified=2.169±0.0016
+base BE=1.19 (new)                 n=30 pdr=0.5614±0.0083 syncSuccess=0.5613±0.0083 e2eMean=0.3372±0.00063 e2eP95=0.412±0.00053 colCpuUtil=0.1794±0.0024 hecmPerVerified=2.169±0.0016
+base BE=0.86 (new)                 n=30 pdr=0.5614±0.0083 syncSuccess=0.5613±0.0083 e2eMean=0.3323±0.00058 e2eP95=0.4068±0.00051 colCpuUtil=0.1794±0.0024 hecmPerVerified=2.169±0.0016
+ind BE=0.10 (published)            n=30 pdr=0.5642±0.0068 syncSuccess=0.5642±0.0068 e2eMean=0.2924±0.00037 e2eP95=0.3662±0.00028 colCpuUtil=0.1017±0.0011 hecmPerVerified=1.152±0
+ind BE=1.19 (new)                  n=30 pdr=0.5642±0.0068 syncSuccess=0.5642±0.0068 e2eMean=0.3232±0.00059 e2eP95=0.3976±0.00044 colCpuUtil=0.1017±0.0011 hecmPerVerified=1.152±0
+ind BE=0.86 (new)                  n=30 pdr=0.5642±0.0068 syncSuccess=0.5642±0.0068 e2eMean=0.3139±0.00051 e2eP95=0.388±0.00037 colCpuUtil=0.1017±0.0011 hecmPerVerified=1.152±0
+== E
+msm BE=0.10 (published)            n=30 pdr=0.8729±0.012 syncSuccess=0.8729±0.012 e2eMean=0.2594±0.00038 e2eP95=0.3316±0.00078 colCpuUtil=0.07164±0.00099 hecmPerVerified=1.022±0.004
+msm BE=1.19 (new)                  n=30 pdr=0.8729±0.012 syncSuccess=0.8729±0.012 e2eMean=0.263±0.00037 e2eP95=0.3353±0.00078 colCpuUtil=0.07164±0.00099 hecmPerVerified=1.022±0.004
+msm BE=0.86 (new)                  n=30 pdr=0.8729±0.012 syncSuccess=0.8729±0.012 e2eMean=0.2619±0.00037 e2eP95=0.3342±0.00077 colCpuUtil=0.07164±0.00099 hecmPerVerified=1.022±0.004
+base BE=0.10 (published)           n=30 pdr=0.8729±0.0054 syncSuccess=0.8729±0.0054 e2eMean=0.3285±0.00036 e2eP95=0.4123±0.00087 colCpuUtil=0.2589±0.0017 hecmPerVerified=4.592±0.014
+base BE=1.19 (new)                 n=30 pdr=0.8729±0.0054 syncSuccess=0.8729±0.0054 e2eMean=0.3415±0.00039 e2eP95=0.4266±0.00085 colCpuUtil=0.2589±0.0017 hecmPerVerified=4.592±0.014
+base BE=0.86 (new)                 n=30 pdr=0.8729±0.0054 syncSuccess=0.8729±0.0054 e2eMean=0.3375±0.00038 e2eP95=0.4221±0.00089 colCpuUtil=0.2589±0.0017 hecmPerVerified=4.592±0.014
+ind BE=0.10 (published)            n=30 pdr=0.871±0.013 syncSuccess=0.871±0.013 e2eMean=0.2864±0.0006 e2eP95=0.358±0.00066 colCpuUtil=0.08036±0.0011 hecmPerVerified=1.28±0.001
+ind BE=1.19 (new)                  n=30 pdr=0.871±0.013 syncSuccess=0.871±0.013 e2eMean=0.3091±0.0007 e2eP95=0.3811±0.00073 colCpuUtil=0.08036±0.0011 hecmPerVerified=1.28±0.001
+ind BE=0.86 (new)                  n=30 pdr=0.871±0.013 syncSuccess=0.871±0.013 e2eMean=0.3022±0.00066 e2eP95=0.374±0.00069 colCpuUtil=0.08036±0.0011 hecmPerVerified=1.28±0.001
+== B1 theta
+A100 ind theta=1 (published)       n=30 pdr=0.999±0.00026 syncSuccess=0.999±0.00026 e2eMean=0.3055±0.00032 e2eP95=0.3588±0.00017 colCpuUtil=0.008078±1.1e-05 hecmPerVerified=1.152±0
+A100 ind theta=0.25 (new)          n=30 pdr=0.999±0.00026 syncSuccess=0.999±0.00026 e2eMean=0.3053±0.00032 e2eP95=0.3587±0.00017 colCpuUtil=0.008078±1.1e-05 hecmPerVerified=1.152±0
+A100 msm theta=0.25 (published)    n=30 pdr=0.999±0.00026 syncSuccess=0.999±0.00026 e2eMean=0.3046±0.00031 e2eP95=0.3579±0.00015 colCpuUtil=0.007398±2.1e-05 hecmPerVerified=0.9855±0.0025
+A500 ind theta=1 (published)       n=30 pdr=0.9991±0.00013 syncSuccess=0.9991±0.00013 e2eMean=0.3132±0.00013 e2eP95=0.3666±7.3e-05 colCpuUtil=0.008079±6.3e-06 hecmPerVerified=1.152±0
+A500 ind theta=0.25 (new)          n=30 pdr=0.9991±0.00013 syncSuccess=0.9991±0.00013 e2eMean=0.3127±0.00013 e2eP95=0.366±7.3e-05 colCpuUtil=0.008079±6.3e-06 hecmPerVerified=1.152±0
+A500 msm theta=0.25 (published)    n=30 pdr=0.9991±0.00013 syncSuccess=0.9991±0.00013 e2eMean=0.3074±0.00012 e2eP95=0.3605±7.5e-05 colCpuUtil=0.007397±1.1e-05 hecmPerVerified=0.985±0.0013
+A2 ind theta=1 (published)         n=30 pdr=0.5642±0.0068 syncSuccess=0.5642±0.0068 e2eMean=0.2924±0.00037 e2eP95=0.3662±0.00028 colCpuUtil=0.1017±0.0011 hecmPerVerified=1.152±0
+A2 ind theta=0.25 (new)            n=30 pdr=0.5642±0.0068 syncSuccess=0.5642±0.0068 e2eMean=0.2903±0.00037 e2eP95=0.3642±0.00027 colCpuUtil=0.1017±0.0011 hecmPerVerified=1.152±0
+A2 msm theta=0.25 (published)      n=30 pdr=0.5567±0.011 syncSuccess=0.5567±0.011 e2eMean=0.2894±0.00042 e2eP95=0.3634±0.00033 colCpuUtil=0.04902±0.00082 hecmPerVerified=0.4791±0.00092
+E ind theta=1 (published)          n=30 pdr=0.871±0.013 syncSuccess=0.871±0.013 e2eMean=0.2864±0.0006 e2eP95=0.358±0.00066 colCpuUtil=0.08036±0.0011 hecmPerVerified=1.28±0.001
+E ind theta=0.25 (new)             n=30 pdr=0.871±0.013 syncSuccess=0.871±0.013 e2eMean=0.2849±0.0006 e2eP95=0.3565±0.00065 colCpuUtil=0.08036±0.0011 hecmPerVerified=1.28±0.001
+E msm theta=0.25 (published)       n=30 pdr=0.8729±0.012 syncSuccess=0.8729±0.012 e2eMean=0.2594±0.00038 e2eP95=0.3316±0.00078 colCpuUtil=0.07164±0.00099 hecmPerVerified=1.022±0.004
