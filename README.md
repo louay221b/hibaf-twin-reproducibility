@@ -2,9 +2,8 @@
 
 ## Latest uploaded scripts (2026-11-21)
 
-The newly supplied archive `last script.zip` introduces a separate 0.61 ms/HECM back-end calibration and a corrected Monte Carlo plotting script. The portable scripts are in [`campaign/backend_0p61ms/`](campaign/backend_0p61ms/README.md), and the corrected figure generator is [`analytic/make_fig7_mc.py`](analytic/make_fig7_mc.py). Prior 0.10 ms source files are retained for provenance; the raw 0.61 ms simulation CSVs are still required before its results can be independently audited.
+The newly supplied archive `last script.zip` introduces a separate 0.61 ms/HECM back-end calibration and a corrected Monte Carlo plotting script. The portable scripts and 0.61 ms figures generator are in [`campaign/backend_0p61ms/`](campaign/backend_0p61ms/README.md), and the corrected Monte Carlo figure generator is [`analytic/make_fig7_mc.py`](analytic/make_fig7_mc.py). Prior 0.10 ms source files are retained for provenance; the raw 0.61 ms simulation CSVs are still required before its results can be independently audited.
 
-The three internal `REVIEW_*.md` files were removed from the public main branch. Their contents remain in the publicly readable Git history unless that history is rewritten.
 
 
 ## v33 source restoration — 2026-11-20
@@ -34,7 +33,7 @@ The reproducibility statement is therefore **partial** until both current-campai
 
 The source used for the new sensitivity experiments is `ns3/hibaf-sim_sensitivity.cc` (with the optional `--indTheta` parameter). It is separate from the original `ns3/hibaf-sim.cc` to preserve historical code and avoid silently changing existing simulations. See [sensitivity documentation](results/sensitivity/README.md).
 
-Everything in this package was executed. Each item is labelled by the kind of evidence it produces.
+The repository distinguishes executable source, archived results, symbolic evidence and hardware measurements. Not every script is re-executed during documentation updates.
 
 | Folder | Content | Evidence type |
 |---|---|---|
@@ -48,7 +47,6 @@ Everything in this package was executed. Each item is labelled by the kind of ev
 | `curve/` | **Certified curve** y² = x⁵ + 8 over F_p, p = 2¹²⁷ − 2437; prime order q (254 bits). `find_curve.py` (CM search), `validate_curve.py` (order certificate, embedding degree, rho bits, twists, generator), `real_curve_test.py` (Schnorr, MSM batch, 64-byte canonical encoding on the real curve), 5-repeat benchmark on this curve | certified / executable / measured |
 | `reference_model/` | Executable HiBaF v2 on a prime-order toy Jacobian, with real AES-128-GCM and BLAKE2s; `test_hibaf_v2.py` passes archived 35/35 checks; `test_deferred_ad.py` adds the 36th independent regression check | executable |
 | `tamarin/` | Tamarin 1.10.0 models and proof logs: enrolment (unbounded), core (unbounded and 3-epoch), forward secrecy (3-epoch; unbounded attempt) | symbolic |
-| `REVIEW_ASSESSMENT.md` | Three-reviewer assessment and the remaining checklist | — |
 
 ## Reproduce
 
