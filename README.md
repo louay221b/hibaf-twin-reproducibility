@@ -1,5 +1,12 @@
 # HiBaF-Twin — reproducibility package
 
+## Latest uploaded scripts (2026-11-21)
+
+The newly supplied archive `last script.zip` introduces a separate 0.61 ms/HECM back-end calibration and a corrected Monte Carlo plotting script. The portable scripts are in [`campaign/backend_0p61ms/`](campaign/backend_0p61ms/README.md), and the corrected figure generator is [`analytic/make_fig7_mc.py`](analytic/make_fig7_mc.py). Prior 0.10 ms source files are retained for provenance; the raw 0.61 ms simulation CSVs are still required before its results can be independently audited.
+
+The three internal `REVIEW_*.md` files were removed from the public main branch. Their contents remain in the publicly readable Git history unless that history is rewritten.
+
+
 ## v33 source restoration — 2026-11-20
 
 The exact v33 simulator and original 36-check reference-model suite have been restored from the author's `03_reproducibility_package` archive. Each of the five recovered files was checked against its Git blob hash in the archive. The 36/36 transcript is the archived execution from 2026-10-29, not a new execution.
