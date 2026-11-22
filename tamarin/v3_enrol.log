@@ -1,0 +1,765 @@
+maude tool: 'maude'
+ checking version: 3.5. OK.
+ checking installation: OK.
+[Theory HiBaF_v3_enrol] Theory loaded
+[Theory HiBaF_v3_enrol] Theory translated
+[Theory HiBaF_v3_enrol] Derivation checks started
+[Theory HiBaF_v3_enrol] Derivation checks ended
+[Theory HiBaF_v3_enrol] Theory closed
+[Saturating Sources] Step 1 (Max 5)
+[Saturating Sources] Done
+theory HiBaF_v3_enrol begin
+
+// Function signature and definition of the equational theory E
+
+builtins: diffie-hellman
+functions: fst/1, h/1, mac/2, pair/2, pk/1, sign/2, snd/1, true/0,
+           verify/3
+equations:
+    fst(<x.1, x.2>) = x.1,
+    snd(<x.1, x.2>) = x.2,
+    verify(sign(x.1, x.2), x.1, pk(x.2)) = true
+
+
+
+
+
+
+
+
+
+
+
+rule (modulo E) Register_pk:
+   [ Fr( ~sk ) ]
+  --[ Registered( $A ) ]->
+   [ !Ltk( $A, ~sk ), !Pk( $A, pk(~sk) ), Out( pk(~sk) ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Reveal_ltk:
+   [ !Ltk( $A, sk ) ] --[ RevLtk( $A ) ]-> [ Out( sk ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) S_1:
+   [ Fr( ~a ), !Ltk( $S, skS ) ]
+  --[ SStart( $S, $BE, 'g'^~a ) ]->
+   [
+   S_wait1( $S, $BE, ~a ),
+   Out( <'e1', $S, $BE, 'g'^~a, sign(<'e1', $S, $BE, 'g'^~a>, skS)> )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) BE_2:
+   [
+   In( <'e1', $S, $BE, X, sig1> ), Fr( ~b ), !Ltk( $BE, skB ),
+   !Pk( $S, pkS )
+   ]
+  --[
+  Eq( verify(sig1, <'e1', $S, $BE, X>, pkS), true ),
+  BERunning( $BE, $S, h(<'enrol', X^~b, $S, $BE, X, 'g'^~b>) )
+  ]->
+   [
+   BE_wait3( $S, $BE, X, 'g'^~b, h(<'mac', X^~b, $S, $BE, X, 'g'^~b>),
+             h(<'enrol', X^~b, $S, $BE, X, 'g'^~b>)
+   ),
+   Out( <'e2', $S, $BE, 'g'^~b, sign(<'e2', $S, $BE, X, 'g'^~b>, skB), 
+         mac(h(<'mac', X^~b, $S, $BE, X, 'g'^~b>), <'e2', $BE>)>
+   )
+   ]
+
+  /*
+  rule (modulo AC) BE_2:
+     [
+     In( <'e1', $S, $BE, X, sig1> ), Fr( ~b ), !Ltk( $BE, skB ),
+     !Pk( $S, pkS )
+     ]
+    --[
+    Eq( z.1, true ),
+    BERunning( $BE, $S, h(<'enrol', z, $S, $BE, X, 'g'^~b>) )
+    ]->
+     [
+     BE_wait3( $S, $BE, X, 'g'^~b, h(<'mac', z, $S, $BE, X, 'g'^~b>),
+               h(<'enrol', z, $S, $BE, X, 'g'^~b>)
+     ),
+     Out( <'e2', $S, $BE, 'g'^~b, sign(<'e2', $S, $BE, X, 'g'^~b>, skB), 
+           mac(h(<'mac', z, $S, $BE, X, 'g'^~b>), <'e2', $BE>)>
+     )
+     ]
+    variants (modulo AC)
+     1. $BE   = $BE.21
+        $S    = $S.22
+        ~b    = ~b.23
+        X     = X.24
+        pkS   = pkS.25
+        sig1  = sig1.26
+        z     = X.24^~b.23
+        z.1   = verify(sig1.26, <'e1', $S.22, $BE.21, X.24>, pkS.25)
+    
+     2. $BE   = $BE.21
+        $S    = $S.22
+        X     = DH_neutral
+        pkS   = pkS.25
+        sig1  = sig1.26
+        z     = DH_neutral
+        z.1   = verify(sig1.26, <'e1', $S.22, $BE.21, DH_neutral>, pkS.25)
+    
+     3. $BE   = $BE.26
+        $S    = $S.27
+        ~b    = ~b.28
+        X     = z.36^inv(~b.28)
+        pkS   = pkS.30
+        sig1  = sig1.31
+        z     = z.36
+        z.1   = verify(sig1.31, <'e1', $S.27, $BE.26, z.36^inv(~b.28)>, pkS.30)
+    
+     4. $BE   = $BE.128
+        $S    = $S.129
+        ~b    = ~b.130
+        X     = x.253^x.254
+        pkS   = pkS.132
+        sig1  = sig1.133
+        z     = x.253^(~b.130*x.254)
+        z.1   = verify(sig1.133, <'e1', $S.129, $BE.128, x.253^x.254>, pkS.132)
+    
+     5. $BE   = $BE.129
+        $S    = $S.130
+        ~b    = ~b.131
+        X     = x.255^inv((~b.131*x.256))
+        pkS   = pkS.133
+        sig1  = sig1.134
+        z     = x.255^inv(x.256)
+        z.1   = verify(sig1.134,
+                       <'e1', $S.130, $BE.129, x.255^inv((~b.131*x.256))>, pkS.133)
+    
+     6. $BE   = $BE.129
+        $S    = $S.130
+        ~b    = ~b.131
+        X     = x.255^(x.256*inv(~b.131))
+        pkS   = pkS.133
+        sig1  = sig1.134
+        z     = x.255^x.256
+        z.1   = verify(sig1.134,
+                       <'e1', $S.130, $BE.129, x.255^(x.256*inv(~b.131))>, pkS.133)
+    
+     7. $BE   = $BE.130
+        $S    = $S.131
+        ~b    = ~b.132
+        X     = x.256^(x.257*inv((~b.132*x.258)))
+        pkS   = pkS.134
+        sig1  = sig1.135
+        z     = x.256^(x.257*inv(x.258))
+        z.1   = verify(sig1.135,
+                       <'e1', $S.131, $BE.130, x.256^(x.257*inv((~b.132*x.258)))>, pkS.134)
+    
+     8. $BE   = $BE.130
+        $S    = $S.131
+        X     = DH_neutral
+        pkS   = pk(x.258)
+        sig1  = sign(<'e1', $S.131, $BE.130, DH_neutral>, x.258)
+        z     = DH_neutral
+        z.1   = true
+    
+     9. $BE   = $BE.131
+        $S    = $S.132
+        ~b    = ~b.133
+        X     = X.134
+        pkS   = pk(x.260)
+        sig1  = sign(<'e1', $S.132, $BE.131, X.134>, x.260)
+        z     = X.134^~b.133
+        z.1   = true
+    
+    10. $BE   = $BE.131
+        $S    = $S.132
+        ~b    = ~b.133
+        X     = z.141^inv(~b.133)
+        pkS   = pk(x.260)
+        sig1  = sign(<'e1', $S.132, $BE.131, z.141^inv(~b.133)>, x.260)
+        z     = z.141
+        z.1   = true
+    
+    11. $BE   = $BE.132
+        $S    = $S.133
+        ~b    = ~b.134
+        X     = x.260^x.261
+        pkS   = pk(x.262)
+        sig1  = sign(<'e1', $S.133, $BE.132, x.260^x.261>, x.262)
+        z     = x.260^(~b.134*x.261)
+        z.1   = true
+    
+    12. $BE   = $BE.132
+        $S    = $S.133
+        ~b    = ~b.134
+        X     = x.260^inv((~b.134*x.261))
+        pkS   = pk(x.262)
+        sig1  = sign(<'e1', $S.133, $BE.132, x.260^inv((~b.134*x.261))>, x.262)
+        z     = x.260^inv(x.261)
+        z.1   = true
+    
+    13. $BE   = $BE.132
+        $S    = $S.133
+        ~b    = ~b.134
+        X     = x.260^(x.261*inv(~b.134))
+        pkS   = pk(x.262)
+        sig1  = sign(<'e1', $S.133, $BE.132, x.260^(x.261*inv(~b.134))>, x.262)
+        z     = x.260^x.261
+        z.1   = true
+    
+    14. $BE   = $BE.133
+        $S    = $S.134
+        ~b    = ~b.135
+        X     = x.261^(x.262*inv((~b.135*x.263)))
+        pkS   = pk(x.264)
+        sig1  = sign(<'e1', $S.134, $BE.133, x.261^(x.262*inv((~b.135*x.263)))>,
+                     x.264)
+        z     = x.261^(x.262*inv(x.263))
+        z.1   = true
+  */
+
+rule (modulo E) S_3:
+   [
+   S_wait1( $S, $BE, ~a ), In( <'e2', $S, $BE, Y, sigB, tB> ),
+   !Pk( $BE, pkB ), !Ltk( $S, skS )
+   ]
+  --[
+  Eq( verify(sigB, <'e2', $S, $BE, 'g'^~a, Y>, pkB), true ),
+  Eq( tB, mac(h(<'mac', Y^~a, $S, $BE, 'g'^~a, Y>), <'e2', $BE>) ),
+  SCommit( $S, $BE, h(<'enrol', Y^~a, $S, $BE, 'g'^~a, Y>) ),
+  SRunning( $S, $BE, h(<'enrol', Y^~a, $S, $BE, 'g'^~a, Y>) ),
+  SKey( $S, $BE, h(<'enrol', Y^~a, $S, $BE, 'g'^~a, Y>) )
+  ]->
+   [
+   Out( <'e3', $S, $BE, sign(<'e3', $S, $BE, 'g'^~a, Y>, skS), 
+         mac(h(<'mac', Y^~a, $S, $BE, 'g'^~a, Y>), <'e3', $S>)>
+   )
+   ]
+
+  /*
+  rule (modulo AC) S_3:
+     [
+     S_wait1( $S, $BE, ~a ), In( <'e2', $S, $BE, Y, sigB, tB> ),
+     !Pk( $BE, pkB ), !Ltk( $S, skS )
+     ]
+    --[
+    Eq( z.1, true ),
+    Eq( tB, mac(h(<'mac', z, $S, $BE, 'g'^~a, Y>), <'e2', $BE>) ),
+    SCommit( $S, $BE, h(<'enrol', z, $S, $BE, 'g'^~a, Y>) ),
+    SRunning( $S, $BE, h(<'enrol', z, $S, $BE, 'g'^~a, Y>) ),
+    SKey( $S, $BE, h(<'enrol', z, $S, $BE, 'g'^~a, Y>) )
+    ]->
+     [
+     Out( <'e3', $S, $BE, sign(<'e3', $S, $BE, 'g'^~a, Y>, skS), 
+           mac(h(<'mac', z, $S, $BE, 'g'^~a, Y>), <'e3', $S>)>
+     )
+     ]
+    variants (modulo AC)
+     1. $BE   = $BE.21
+        $S    = $S.22
+        ~a    = ~a.23
+        Y     = Y.24
+        pkB   = pkB.25
+        sigB  = sigB.26
+        z     = Y.24^~a.23
+        z.1   = verify(sigB.26, <'e2', $S.22, $BE.21, 'g'^~a.23, Y.24>, pkB.25)
+    
+     2. $BE   = $BE.21
+        $S    = $S.22
+        ~a    = ~a.23
+        Y     = DH_neutral
+        pkB   = pkB.25
+        sigB  = sigB.26
+        z     = DH_neutral
+        z.1   = verify(sigB.26, <'e2', $S.22, $BE.21, 'g'^~a.23, DH_neutral>,
+                       pkB.25)
+    
+     3. $BE   = $BE.28
+        $S    = $S.29
+        ~a    = ~a.30
+        Y     = z.40^inv(~a.30)
+        pkB   = pkB.32
+        sigB  = sigB.33
+        z     = z.40
+        z.1   = verify(sigB.33,
+                       <'e2', $S.29, $BE.28, 'g'^~a.30, z.40^inv(~a.30)>, pkB.32)
+    
+     4. $BE   = $BE.135
+        $S    = $S.136
+        ~a    = ~a.137
+        Y     = x.267^x.268
+        pkB   = pkB.139
+        sigB  = sigB.140
+        z     = x.267^(~a.137*x.268)
+        z.1   = verify(sigB.140,
+                       <'e2', $S.136, $BE.135, 'g'^~a.137, x.267^x.268>, pkB.139)
+    
+     5. $BE   = $BE.136
+        $S    = $S.137
+        ~a    = ~a.138
+        Y     = x.269^inv((~a.138*x.270))
+        pkB   = pkB.140
+        sigB  = sigB.141
+        z     = x.269^inv(x.270)
+        z.1   = verify(sigB.141,
+                       <'e2', $S.137, $BE.136, 'g'^~a.138, x.269^inv((~a.138*x.270))>, pkB.140)
+    
+     6. $BE   = $BE.136
+        $S    = $S.137
+        ~a    = ~a.138
+        Y     = x.269^(x.270*inv(~a.138))
+        pkB   = pkB.140
+        sigB  = sigB.141
+        z     = x.269^x.270
+        z.1   = verify(sigB.141,
+                       <'e2', $S.137, $BE.136, 'g'^~a.138, x.269^(x.270*inv(~a.138))>, pkB.140)
+    
+     7. $BE   = $BE.137
+        $S    = $S.138
+        ~a    = ~a.139
+        Y     = DH_neutral
+        pkB   = pk(x.272)
+        sigB  = sign(<'e2', $S.138, $BE.137, 'g'^~a.139, DH_neutral>, x.272)
+        z     = DH_neutral
+        z.1   = true
+    
+     8. $BE   = $BE.137
+        $S    = $S.138
+        ~a    = ~a.139
+        Y     = x.270^(x.271*inv((~a.139*x.272)))
+        pkB   = pkB.141
+        sigB  = sigB.142
+        z     = x.270^(x.271*inv(x.272))
+        z.1   = verify(sigB.142,
+                       <'e2', $S.138, $BE.137, 'g'^~a.139, x.270^(x.271*inv((~a.139*x.272)))>,
+                       pkB.141)
+    
+     9. $BE   = $BE.138
+        $S    = $S.139
+        ~a    = ~a.140
+        Y     = Y.141
+        pkB   = pk(x.274)
+        sigB  = sign(<'e2', $S.139, $BE.138, 'g'^~a.140, Y.141>, x.274)
+        z     = Y.141^~a.140
+        z.1   = true
+    
+    10. $BE   = $BE.138
+        $S    = $S.139
+        ~a    = ~a.140
+        Y     = z.150^inv(~a.140)
+        pkB   = pk(x.274)
+        sigB  = sign(<'e2', $S.139, $BE.138, 'g'^~a.140, z.150^inv(~a.140)>,
+                     x.274)
+        z     = z.150
+        z.1   = true
+    
+    11. $BE   = $BE.139
+        $S    = $S.140
+        ~a    = ~a.141
+        Y     = x.274^x.275
+        pkB   = pk(x.276)
+        sigB  = sign(<'e2', $S.140, $BE.139, 'g'^~a.141, x.274^x.275>, x.276)
+        z     = x.274^(~a.141*x.275)
+        z.1   = true
+    
+    12. $BE   = $BE.139
+        $S    = $S.140
+        ~a    = ~a.141
+        Y     = x.274^inv((~a.141*x.275))
+        pkB   = pk(x.276)
+        sigB  = sign(<'e2', $S.140, $BE.139, 'g'^~a.141, 
+                      x.274^inv((~a.141*x.275))>,
+                     x.276)
+        z     = x.274^inv(x.275)
+        z.1   = true
+    
+    13. $BE   = $BE.139
+        $S    = $S.140
+        ~a    = ~a.141
+        Y     = x.274^(x.275*inv(~a.141))
+        pkB   = pk(x.276)
+        sigB  = sign(<'e2', $S.140, $BE.139, 'g'^~a.141, 
+                      x.274^(x.275*inv(~a.141))>,
+                     x.276)
+        z     = x.274^x.275
+        z.1   = true
+    
+    14. $BE   = $BE.140
+        $S    = $S.141
+        ~a    = ~a.142
+        Y     = x.275^(x.276*inv((~a.142*x.277)))
+        pkB   = pk(x.278)
+        sigB  = sign(<'e2', $S.141, $BE.140, 'g'^~a.142, 
+                      x.275^(x.276*inv((~a.142*x.277)))>,
+                     x.278)
+        z     = x.275^(x.276*inv(x.277))
+        z.1   = true
+  */
+
+rule (modulo E) BE_4:
+   [
+   BE_wait3( $S, $BE, X, Y, Km, K0 ), In( <'e3', $S, $BE, sigS, tS> ),
+   !Pk( $S, pkS )
+   ]
+  --[
+  Eq( verify(sigS, <'e3', $S, $BE, X, Y>, pkS), true ),
+  Eq( tS, mac(Km, <'e3', $S>) ), BECommit( $BE, $S, K0 ),
+  BEKey( $BE, $S, K0 )
+  ]->
+   [ ]
+
+  /*
+  rule (modulo AC) BE_4:
+     [
+     BE_wait3( $S, $BE, X, Y, Km, K0 ), In( <'e3', $S, $BE, sigS, tS> ),
+     !Pk( $S, pkS )
+     ]
+    --[
+    Eq( z, true ), Eq( tS, mac(Km, <'e3', $S>) ), BECommit( $BE, $S, K0 ),
+    BEKey( $BE, $S, K0 )
+    ]->
+     [ ]
+    variants (modulo AC)
+    1. $BE   = $BE.13
+       $S    = $S.14
+       X     = X.17
+       Y     = Y.18
+       pkS   = pkS.19
+       sigS  = sigS.20
+       z     = verify(sigS.20, <'e3', $S.14, $BE.13, X.17, Y.18>, pkS.19)
+    
+    2. $BE   = $BE.19
+       $S    = $S.20
+       X     = X.23
+       Y     = Y.24
+       pkS   = pk(x.36)
+       sigS  = sign(<'e3', $S.20, $BE.19, X.23, Y.24>, x.36)
+       z     = true
+  */
+
+restriction equality:
+  "∀ x y #i. (Eq( x, y ) @ #i) ⇒ (x = y)"
+  // safety formula
+
+lemma executable:
+  exists-trace
+  "∃ S BE K #i #j.
+    (((SCommit( S, BE, K ) @ #i) ∧ (BECommit( BE, S, K ) @ #j)) ∧
+     (#i < #j)) ∧
+    (¬(∃ A #r. RevLtk( A ) @ #r))"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ S BE K #i #j.
+  (SCommit( S, BE, K ) @ #i) ∧ (BECommit( BE, S, K ) @ #j)
+ ∧
+  (#i < #j) ∧ (∀ A #r. (RevLtk( A ) @ #r) ⇒ ⊥)"
+*/
+simplify
+solve( S_wait1( $S, $BE, ~a ) ▶₀ #i )
+  case S_1
+  solve( !Pk( $BE, pk(x) ) ▶₂ #i )
+    case Register_pk
+    solve( !Ltk( $S, skS ) ▶₃ #i )
+      case Register_pk
+      solve( BE_wait3( $S, $BE, X, Y.1, Km, h(<'enrol', z, $S, $BE, 'g'^~a, Y>)
+             ) ▶₀ #j )
+        case BE_2
+        solve( !Pk( $S, pk(x) ) ▶₂ #j )
+          case Register_pk
+          solve( !KU( sign(<'e2', $S, $BE, 'g'^~a, 'g'^~b>, ~sk) ) @ #vk.15 )
+            case BE_2
+            solve( !KU( sign(<'e3', $S, $BE, 'g'^~a, 'g'^~b>, ~sk.2) ) @ #vk.19 )
+              case S_3
+              solve( !KU( sign(<'e1', $S, $BE, 'g'^~a>, ~sk.3) ) @ #vk.24 )
+                case S_1
+                solve( !KU( mac(h(<'mac', 'g'^(~a*~b), $S, $BE, 'g'^~a, 'g'^~b>),
+                                <'e2', $BE>)
+                       ) @ #vk.19 )
+                  case BE_2
+                  solve( !KU( mac(h(<'mac', 'g'^(~a*~b), $S, $BE, 'g'^~a, 'g'^~b>),
+                                  <'e3', $S>)
+                         ) @ #vk.22 )
+                    case S_3
+                    solve( !KU( 'g'^~a ) @ #vk.24 )
+                      case S_1
+                      solve( !KU( 'g'^~b ) @ #vk.22 )
+                        case BE_2
+                        SOLVED // trace found
+                      qed
+                    qed
+                  qed
+                qed
+              qed
+            qed
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma key_secrecy_pfs_S:
+  all-traces
+  "∀ S BE K #i #j.
+    ((SKey( S, BE, K ) @ #i) ∧ (K( K ) @ #j)) ⇒
+    (∃ #r. (RevLtk( BE ) @ #r) ∧ (#r < #i))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S BE K #i #j.
+  (SKey( S, BE, K ) @ #i) ∧ (K( K ) @ #j)
+ ∧
+  ∀ #r. (RevLtk( BE ) @ #r) ⇒ ¬(#r < #i)"
+*/
+simplify
+solve( S_wait1( $S, $BE, ~a ) ▶₀ #i )
+  case S_1
+  solve( !Pk( $BE, pk(x) ) ▶₂ #i )
+    case Register_pk
+    solve( !Ltk( $S, skS ) ▶₃ #i )
+      case Register_pk
+      solve( !KU( h(<'enrol', z, $S, $BE, 'g'^~a, Y>) ) @ #vk.11 )
+        case c_h
+        solve( !KU( sign(<'e2', $S, $BE, 'g'^~a, Y>, ~sk) ) @ #vk.13 )
+          case BE_2
+          solve( !KU( sign(<'e1', $S, $BE, 'g'^~a>, ~sk.3) ) @ #vk.25 )
+            case S_1
+            solve( !KU( 'g'^(~a*~b) ) @ #vk.22 )
+              case BE_2
+              by solve( !KU( ~a ) @ #vk.26 )
+            next
+              case S_1
+              by solve( !KU( ~b ) @ #vk.26 )
+            next
+              case c_exp
+              by solve( !KU( ~a ) @ #vk.28 )
+            qed
+          next
+            case c_sign
+            solve( !KU( ~sk.3 ) @ #vk.29 )
+              case Reveal_ltk
+              solve( !KU( 'g'^(~a*~b) ) @ #vk.27 )
+                case BE_2
+                by solve( !KU( ~a ) @ #vk.30 )
+              next
+                case S_1
+                by solve( !KU( ~b ) @ #vk.30 )
+              next
+                case c_exp
+                by solve( !KU( ~a ) @ #vk.32 )
+              qed
+            qed
+          qed
+        next
+          case c_sign
+          solve( !KU( ~sk ) @ #vk.21 )
+            case Reveal_ltk
+            by contradiction /* from formulas */
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma key_secrecy_pfs_BE:
+  all-traces
+  "∀ S BE K #i #j.
+    ((BEKey( BE, S, K ) @ #i) ∧ (K( K ) @ #j)) ⇒
+    (∃ #r. (RevLtk( S ) @ #r) ∧ (#r < #i))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S BE K #i #j.
+  (BEKey( BE, S, K ) @ #i) ∧ (K( K ) @ #j)
+ ∧
+  ∀ #r. (RevLtk( S ) @ #r) ⇒ ¬(#r < #i)"
+*/
+simplify
+solve( BE_wait3( $S, $BE, X, Y, Km, K ) ▶₀ #i )
+  case BE_2
+  solve( !Pk( $S, pk(x) ) ▶₂ #i )
+    case Register_pk
+    solve( !KU( h(<'enrol', z, $S, $BE, X, 'g'^~b>) ) @ #vk.12 )
+      case c_h
+      solve( !KU( sign(<'e3', $S, $BE, X, 'g'^~b>, ~sk) ) @ #vk.13 )
+        case S_3
+        solve( !KU( sign(<'e1', $S, $BE, 'g'^~a>, ~sk.1) ) @ #vk.22 )
+          case S_1
+          solve( !KU( sign(<'e2', $S, $BE, 'g'^~a, 'g'^~b>, ~sk.3) ) @ #vk.31 )
+            case BE_2
+            solve( !KU( 'g'^(~a*~b) ) @ #vk.27 )
+              case BE_2
+              by solve( !KU( ~a ) @ #vk.33 )
+            next
+              case S_1
+              by solve( !KU( ~b ) @ #vk.33 )
+            next
+              case c_exp
+              by solve( !KU( ~a ) @ #vk.35 )
+            qed
+          next
+            case c_sign
+            solve( !KU( ~sk.3 ) @ #vk.34 )
+              case Reveal_ltk
+              solve( !KU( 'g'^(~a*~b) ) @ #vk.30 )
+                case BE_2
+                by solve( !KU( ~a ) @ #vk.35 )
+              next
+                case S_1
+                by solve( !KU( ~b ) @ #vk.35 )
+              next
+                case c_exp
+                by solve( !KU( ~a ) @ #vk.37 )
+              qed
+            qed
+          qed
+        next
+          case c_sign
+          solve( !KU( ~sk.1 ) @ #vk.36 )
+            case Reveal_ltk
+            by contradiction /* from formulas */
+          qed
+        qed
+      next
+        case c_sign
+        solve( !KU( ~sk ) @ #vk.26 )
+          case Reveal_ltk
+          by contradiction /* from formulas */
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma agreement_S:
+  all-traces
+  "∀ S BE K #i.
+    (SCommit( S, BE, K ) @ #i) ⇒
+    ((∃ #j. (BERunning( BE, S, K ) @ #j) ∧ (#j < #i)) ∨
+     (∃ #r. (RevLtk( BE ) @ #r) ∧ (#r < #i)))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S BE K #i.
+  (SCommit( S, BE, K ) @ #i)
+ ∧
+  (∀ #j. (BERunning( BE, S, K ) @ #j) ⇒ ¬(#j < #i)) ∧
+  (∀ #r. (RevLtk( BE ) @ #r) ⇒ ¬(#r < #i))"
+*/
+simplify
+solve( S_wait1( $S, $BE, ~a ) ▶₀ #i )
+  case S_1
+  solve( !Pk( $BE, pk(x) ) ▶₂ #i )
+    case Register_pk
+    solve( !Ltk( $S, skS ) ▶₃ #i )
+      case Register_pk
+      solve( !KU( sign(<'e2', $S, $BE, 'g'^~a, Y>, ~sk) ) @ #vk.9 )
+        case BE_2
+        by contradiction /* from formulas */
+      next
+        case c_sign
+        solve( !KU( ~sk ) @ #vk.15 )
+          case Reveal_ltk
+          by contradiction /* from formulas */
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma injective_agreement_BE:
+  all-traces
+  "∀ S BE K #i.
+    (BECommit( BE, S, K ) @ #i) ⇒
+    ((∃ #j.
+       ((SRunning( S, BE, K ) @ #j) ∧ (#j < #i)) ∧
+       (¬(∃ BE2 S2 #i2. (BECommit( BE2, S2, K ) @ #i2) ∧ (¬(#i2 = #i))))) ∨
+     (∃ #r. (RevLtk( S ) @ #r) ∧ (#r < #i)))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S BE K #i.
+  (BECommit( BE, S, K ) @ #i)
+ ∧
+  (∀ #j.
+    (SRunning( S, BE, K ) @ #j)
+   ⇒
+    ((¬(#j < #i)) ∨
+     (∃ BE2 S2 #i2. (BECommit( BE2, S2, K ) @ #i2) ∧ ¬(#i2 = #i)))) ∧
+  (∀ #r. (RevLtk( S ) @ #r) ⇒ ¬(#r < #i))"
+*/
+simplify
+solve( BE_wait3( $S, $BE, X, Y, Km, K ) ▶₀ #i )
+  case BE_2
+  solve( !Pk( $S, pk(x) ) ▶₂ #i )
+    case Register_pk
+    solve( !KU( sign(<'e3', $S, $BE, X, 'g'^~b>, ~sk) ) @ #vk.10 )
+      case S_3
+      solve( (#i2 < #i)  ∥ (#i < #i2) )
+        case case_1
+        solve( BE_wait3( $S.1, $BE.1, X, Y, Km,
+                         h(<'enrol', 'g'^(~a*~b), $S, $BE, 'g'^~a, 'g'^~b>)
+               ) ▶₀ #i2 )
+          case BE_2
+          by contradiction /* cyclic */
+        qed
+      next
+        case case_2
+        solve( BE_wait3( $S.1, $BE.1, X, Y, Km,
+                         h(<'enrol', 'g'^(~a*~b), $S, $BE, 'g'^~a, 'g'^~b>)
+               ) ▶₀ #i2 )
+          case BE_2
+          by contradiction /* cyclic */
+        qed
+      qed
+    next
+      case c_sign
+      solve( !KU( ~sk ) @ #vk.20 )
+        case Reveal_ltk
+        by contradiction /* from formulas */
+      qed
+    qed
+  qed
+qed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.10.0
+Maude version 3.5
+Git revision: cb62c305f8c8b8c1e664152aa33c95b7b8d5ef32, branch: master
+Compiled at: 2024-10-30 11:11:02.432289291 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: hibaf_v3_enrol.spthy
+
+  processing time: 4.29s
+  
+  executable (exists-trace): verified (14 steps)
+  key_secrecy_pfs_S (all-traces): verified (18 steps)
+  key_secrecy_pfs_BE (all-traces): verified (20 steps)
+  agreement_S (all-traces): verified (8 steps)
+  injective_agreement_BE (all-traces): verified (11 steps)
+
+==============================================================================

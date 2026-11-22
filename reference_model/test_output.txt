@@ -1,0 +1,37 @@
+PASS canonical point encoding round-trips (1508 divisors, all degree-1 points included)
+PASS TTP never holds K_i^(0): signed ephemeral DH gives S and BE the same K0 (no escrow)
+PASS replayed enrolment messages 1 and 3 do not change the back end's key (installed only after a fresh message 3)
+PASS enrolment message 1 from an old window is rejected with one signature check and no pending state
+PASS honest window: all 8 reports committed exactly once and decrypt correctly
+PASS same-window replay to same collector dropped before any group op
+PASS duplicate report carried by two collectors is committed once (fix of Alg. 4)
+PASS cross-window replay dropped (w != current)
+PASS window field rewritten (insider with link key): signature fails, report not committed
+PASS non-canonical U encoding rejected at decoding; no double commit
+PASS 50 outsider forgeries dropped by link MAC (no group operation spent on them)
+PASS insider invalid signatures isolated; honest reports of the window still committed
+PASS per-identity quota / negative cache bound the insider's verification load
+PASS notices whose GCM tag does not verify (forged or altered reports) do not revoke the accused sensor
+PASS Byzantine collector's fabricated accusation of an honest sensor is rejected by the back end (no false revocation)
+PASS compromised sensor: report with valid GCM tag and invalid signature is confirmed evidence; TTP revokes
+PASS revoked S3 rejected end to end (sensor, collector, back end)
+PASS reboot within a window yields a fresh nonce (r_i re-sampled)
+PASS replayed old beacon (w=0) rejected after reboot via NVM w_last
+PASS sensor skips epochs 2->7 and back end catches up to the same window key
+PASS back end refuses keys of an erased (past) epoch
+PASS collector-modified signature breaks the GCM tag: report not committed, integrity failure recorded for that collector
+PASS two valid reports with the same (ID, nonce) produce transferable equivocation evidence
+PASS batch with one invalid signature accepted 0/300 times (bound 2^-16 per test for 16-bit alphas)
+PASS all-valid batch accepted
+PASS honest report with a collector-mutated signature is not accepted as revocation evidence
+PASS epoch grace: late report of the last window decrypted, no previous ratchet state kept, other windows and post-grace refused
+PASS honest report submitted as a notice is rejected: the back end re-verifies the signature (no revocation)
+PASS lazy collector: audit finds valid tag + invalid signature, revokes the sensor and flags the collector
+PASS enrolment message 1 replayed within its window: same message 2, pending session unchanged, enrolment completes
+PASS enrolment rate limit: a second new message 1 from one identity in the same window is refused without work
+PASS eager ratchet: a silent sensor's back-end state is at the current epoch; its earlier epochs are erased
+PASS idle sensor without beacons keeps its stored epoch; on the next beacon it ratchets to the back end's state
+PASS grace retention at an epoch boundary: |T| = 2 window keys per sensor, all for the old epoch's last window
+PASS exact copies pending dropped before quota and MSM; same-nonce variant still gives evidence
+
+35/35 checks passed

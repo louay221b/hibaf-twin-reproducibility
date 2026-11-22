@@ -1,0 +1,542 @@
+maude tool: 'maude'
+ checking version: 3.5. OK.
+ checking installation: OK.
+[Theory HiBaF_v3_fs_grace] Theory loaded
+[Theory HiBaF_v3_fs_grace] Theory translated
+[Theory HiBaF_v3_fs_grace] Derivation checks started
+[Theory HiBaF_v3_fs_grace] Derivation checks ended
+[Theory HiBaF_v3_fs_grace] Theory closed
+[Saturating Sources] Step 1 (Max 5)
+[Saturating Sources] Done
+theory HiBaF_v3_fs_grace begin
+
+// Function signature and definition of the equational theory E
+
+functions: fst/1, h/1, pair/2, sdec/2, senc/2, snd/1
+equations:
+    fst(<x.1, x.2>) = x.1,
+    sdec(senc(x.1, x.2), x.2) = x.1,
+    snd(<x.1, x.2>) = x.2
+
+
+
+
+
+
+
+
+
+rule (modulo E) Enrolled:
+   [ Fr( ~K0 ) ]
+  --[ St( $S, ~K0 ) ]->
+   [ S_st( $S, 'e0', ~K0 ), !SState( $S, ~K0 ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Advance_01:
+   [ S_st( $S, 'e0', K ) ]
+  --[
+  EraseS( $S, K ), St( $S, h(<'next', K>) ),
+  Retain( $S, h(<'enc', K, $S, 'wl'>) )
+  ]->
+   [
+   S_st( $S, 'e1', h(<'next', K>) ), !SState( $S, h(<'next', K>) ),
+   R_tok( $S, h(<'enc', K, $S, 'wl'>) ),
+   !RKey( $S, h(<'enc', K, $S, 'wl'>) )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Advance_12:
+   [ S_st( $S, 'e1', K ) ]
+  --[
+  EraseS( $S, K ), St( $S, h(<'next', K>) ),
+  Retain( $S, h(<'enc', K, $S, 'wl'>) )
+  ]->
+   [
+   S_st( $S, 'e2', h(<'next', K>) ), !SState( $S, h(<'next', K>) ),
+   R_tok( $S, h(<'enc', K, $S, 'wl'>) ),
+   !RKey( $S, h(<'enc', K, $S, 'wl'>) )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Grace_end:
+   [ R_tok( $S, kl ) ] --[ EraseR( $S, kl ) ]-> [ ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Corrupt_state:
+   [ !SState( $S, K ) ] --[ CorruptS( $S, K ) ]-> [ Out( K ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Corrupt_retained:
+   [ !RKey( $S, kl ) ] --[ CorruptR( $S, kl ) ]-> [ Out( kl ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Report_a:
+   [ !SState( $S, K ), Fr( ~m ), Fr( ~nu ) ]
+  --[ Secret( $S, ~m, K, 'wa' ), UseS( $S, K ) ]->
+   [ Out( <$S, 'wa', ~nu, senc(<~m, ~nu>, h(<'enc', K, $S, 'wa'>))> ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Report_l:
+   [ !SState( $S, K ), Fr( ~m ), Fr( ~nu ) ]
+  --[ Secret( $S, ~m, K, 'wl' ), UseS( $S, K ) ]->
+   [ Out( <$S, 'wl', ~nu, senc(<~m, ~nu>, h(<'enc', K, $S, 'wl'>))> ) ]
+
+  /* has exactly the trivial AC variant */
+
+restriction erasure_state:
+  "∀ S K #r #e.
+    ((CorruptS( S, K ) @ #r) ∧ (EraseS( S, K ) @ #e)) ⇒ (#r < #e)"
+  // safety formula
+
+restriction erasure_retained:
+  "∀ S k #r #e.
+    ((CorruptR( S, k ) @ #r) ∧ (EraseR( S, k ) @ #e)) ⇒ (#r < #e)"
+  // safety formula
+
+restriction no_use_after_erasure:
+  "∀ S K #u #e. ((UseS( S, K ) @ #u) ∧ (EraseS( S, K ) @ #e)) ⇒ (#u < #e)"
+  // safety formula
+
+lemma forward_secrecy_with_grace:
+  all-traces
+  "∀ S m K w #i #j.
+    ((Secret( S, m, K, w ) @ #i) ∧ (K( m ) @ #j)) ⇒
+    ((∃ K2 #r.
+       (CorruptS( S, K2 ) @ #r) ∧
+       (¬(∃ #e. (EraseS( S, K ) @ #e) ∧ (#e < #r)))) ∨
+     ((w = 'wl') ∧ (∃ #r. CorruptR( S, h(<'enc', K, S, 'wl'>) ) @ #r)))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S m K w #i #j.
+  (Secret( S, m, K, w ) @ #i) ∧ (K( m ) @ #j)
+ ∧
+  (∀ K2 #r.
+    (CorruptS( S, K2 ) @ #r) ⇒ ∃ #e. (EraseS( S, K ) @ #e) ∧ #e < #r) ∧
+  (((¬(w = 'wl')) ∨
+    (∀ #r. (CorruptR( S, h(<'enc', K, S, 'wl'>) ) @ #r) ⇒ ⊥)))"
+*/
+simplify
+solve( (¬(w = 'wl'))  ∥
+       (∀ #r. (CorruptR( S, h(<'enc', K, S, 'wl'>) ) @ #r) ⇒ ⊥) )
+  case case_1
+  solve( Secret( S, m, K, w ) @ #i )
+    case Report_a
+    solve( !SState( $S, K ) ▶₀ #i )
+      case Advance_01
+      solve( !KU( ~m ) @ #vk )
+        case Report_a
+        solve( !KU( h(<'enc', h(<'next', ~K0>), $S, 'wa'>) ) @ #vk.1 )
+          case c_h
+          solve( !KU( h(<'next', ~K0>) ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          next
+            case c_h
+            solve( !KU( ~K0 ) @ #vk.11 )
+              case Corrupt_state
+              by contradiction /* cyclic */
+            qed
+          qed
+        qed
+      qed
+    next
+      case Advance_12
+      solve( !KU( ~m ) @ #vk )
+        case Report_a
+        solve( !KU( h(<'enc', h(<'next', h(<'next', ~K0>)>), $S, 'wa'>)
+               ) @ #vk.1 )
+          case c_h
+          solve( !KU( h(<'next', h(<'next', ~K0>)>) ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          next
+            case c_h
+            solve( !KU( h(<'next', ~K0>) ) @ #vk.11 )
+              case Corrupt_state
+              by contradiction /* cyclic */
+            next
+              case c_h
+              solve( !KU( ~K0 ) @ #vk.13 )
+                case Corrupt_state
+                by contradiction /* cyclic */
+              qed
+            qed
+          qed
+        qed
+      qed
+    next
+      case Enrolled
+      solve( !KU( ~m ) @ #vk )
+        case Report_a
+        solve( !KU( h(<'enc', ~K0, $S, 'wa'>) ) @ #vk.1 )
+          case c_h
+          solve( !KU( ~K0 ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          qed
+        qed
+      qed
+    qed
+  next
+    case Report_l
+    by contradiction /* from formulas */
+  qed
+next
+  case case_2
+  solve( Secret( S, m, K, w ) @ #i )
+    case Report_a
+    solve( !SState( $S, K ) ▶₀ #i )
+      case Advance_01
+      solve( !KU( ~m ) @ #vk )
+        case Report_a
+        solve( !KU( h(<'enc', h(<'next', ~K0>), $S, 'wa'>) ) @ #vk.1 )
+          case c_h
+          solve( !KU( h(<'next', ~K0>) ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          next
+            case c_h
+            solve( !KU( ~K0 ) @ #vk.11 )
+              case Corrupt_state
+              by contradiction /* cyclic */
+            qed
+          qed
+        qed
+      qed
+    next
+      case Advance_12
+      solve( !KU( ~m ) @ #vk )
+        case Report_a
+        solve( !KU( h(<'enc', h(<'next', h(<'next', ~K0>)>), $S, 'wa'>)
+               ) @ #vk.1 )
+          case c_h
+          solve( !KU( h(<'next', h(<'next', ~K0>)>) ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          next
+            case c_h
+            solve( !KU( h(<'next', ~K0>) ) @ #vk.11 )
+              case Corrupt_state
+              by contradiction /* cyclic */
+            next
+              case c_h
+              solve( !KU( ~K0 ) @ #vk.13 )
+                case Corrupt_state
+                by contradiction /* cyclic */
+              qed
+            qed
+          qed
+        qed
+      qed
+    next
+      case Enrolled
+      solve( !KU( ~m ) @ #vk )
+        case Report_a
+        solve( !KU( h(<'enc', ~K0, $S, 'wa'>) ) @ #vk.1 )
+          case c_h
+          solve( !KU( ~K0 ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          qed
+        qed
+      qed
+    qed
+  next
+    case Report_l
+    solve( !SState( $S, K ) ▶₀ #i )
+      case Advance_01
+      solve( !KU( ~m ) @ #vk )
+        case Report_l
+        solve( !KU( h(<'enc', h(<'next', ~K0>), $S, 'wl'>) ) @ #vk.1 )
+          case Corrupt_retained
+          by contradiction /* from formulas */
+        next
+          case c_h
+          solve( !KU( h(<'next', ~K0>) ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          next
+            case c_h
+            solve( !KU( ~K0 ) @ #vk.11 )
+              case Corrupt_state
+              by contradiction /* cyclic */
+            qed
+          qed
+        qed
+      qed
+    next
+      case Advance_12
+      solve( !KU( ~m ) @ #vk )
+        case Report_l
+        solve( !KU( h(<'enc', h(<'next', h(<'next', ~K0>)>), $S, 'wl'>)
+               ) @ #vk.1 )
+          case c_h
+          solve( !KU( h(<'next', h(<'next', ~K0>)>) ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          next
+            case c_h
+            solve( !KU( h(<'next', ~K0>) ) @ #vk.11 )
+              case Corrupt_state
+              by contradiction /* cyclic */
+            next
+              case c_h
+              solve( !KU( ~K0 ) @ #vk.13 )
+                case Corrupt_state
+                by contradiction /* cyclic */
+              qed
+            qed
+          qed
+        qed
+      qed
+    next
+      case Enrolled
+      solve( !KU( ~m ) @ #vk )
+        case Report_l
+        solve( !KU( h(<'enc', ~K0, $S, 'wl'>) ) @ #vk.1 )
+          case Corrupt_retained
+          by contradiction /* from formulas */
+        next
+          case c_h
+          solve( !KU( ~K0 ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma non_last_windows_secret:
+  all-traces
+  "∀ S m K #i #j.
+    ((Secret( S, m, K, 'wa' ) @ #i) ∧ (K( m ) @ #j)) ⇒
+    (∃ K2 #r.
+      (CorruptS( S, K2 ) @ #r) ∧ (¬(∃ #e. (EraseS( S, K ) @ #e) ∧ (#e < #r))))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S m K #i #j.
+  (Secret( S, m, K, 'wa' ) @ #i) ∧ (K( m ) @ #j)
+ ∧
+  ∀ K2 #r.
+   (CorruptS( S, K2 ) @ #r) ⇒ ∃ #e. (EraseS( S, K ) @ #e) ∧ #e < #r"
+*/
+simplify
+solve( Secret( S, m, K, 'wa' ) @ #i )
+  case Report_a
+  solve( !SState( $S, K ) ▶₀ #i )
+    case Advance_01
+    solve( !KU( ~m ) @ #vk )
+      case Report_a
+      solve( !KU( h(<'enc', h(<'next', ~K0>), $S, 'wa'>) ) @ #vk.1 )
+        case c_h
+        solve( !KU( h(<'next', ~K0>) ) @ #vk.5 )
+          case Corrupt_state
+          by contradiction /* cyclic */
+        next
+          case c_h
+          solve( !KU( ~K0 ) @ #vk.11 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          qed
+        qed
+      qed
+    qed
+  next
+    case Advance_12
+    solve( !KU( ~m ) @ #vk )
+      case Report_a
+      solve( !KU( h(<'enc', h(<'next', h(<'next', ~K0>)>), $S, 'wa'>)
+             ) @ #vk.1 )
+        case c_h
+        solve( !KU( h(<'next', h(<'next', ~K0>)>) ) @ #vk.5 )
+          case Corrupt_state
+          by contradiction /* cyclic */
+        next
+          case c_h
+          solve( !KU( h(<'next', ~K0>) ) @ #vk.11 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          next
+            case c_h
+            solve( !KU( ~K0 ) @ #vk.13 )
+              case Corrupt_state
+              by contradiction /* cyclic */
+            qed
+          qed
+        qed
+      qed
+    qed
+  next
+    case Enrolled
+    solve( !KU( ~m ) @ #vk )
+      case Report_a
+      solve( !KU( h(<'enc', ~K0, $S, 'wa'>) ) @ #vk.1 )
+        case c_h
+        solve( !KU( ~K0 ) @ #vk.5 )
+          case Corrupt_state
+          by contradiction /* cyclic */
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma grace_exposure_possible:
+  exists-trace
+  "∃ S m K #i #j #e #r.
+    (((((Secret( S, m, K, 'wl' ) @ #i) ∧ (K( m ) @ #j)) ∧
+       (EraseS( S, K ) @ #e)) ∧
+      (CorruptR( S, h(<'enc', K, S, 'wl'>) ) @ #r)) ∧
+     (#e < #r)) ∧
+    (¬(∃ K2 #c. CorruptS( S, K2 ) @ #c))"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ S m K #i #j #e #r.
+  (Secret( S, m, K, 'wl' ) @ #i) ∧
+  (K( m ) @ #j) ∧
+  (EraseS( S, K ) @ #e) ∧
+  (CorruptR( S, h(<'enc', K, S, 'wl'>) ) @ #r)
+ ∧
+  (#e < #r) ∧ (∀ K2 #c. (CorruptS( S, K2 ) @ #c) ⇒ ⊥)"
+*/
+simplify
+solve( !RKey( $S, h(<'enc', K, $S, 'wl'>) ) ▶₀ #r )
+  case Advance_01
+  solve( Secret( $S, m, ~K0, 'wl' ) @ #i )
+    case Report_l
+    solve( !SState( $S, ~K0 ) ▶₀ #i )
+      case Enrolled
+      solve( EraseS( $S, ~K0 ) @ #e )
+        case Advance_01
+        solve( S_st( $S, 'e0', ~K0 ) ▶₀ #e )
+          case Enrolled
+          solve( !KU( ~m ) @ #vk )
+            case Report_l
+            solve( !KU( h(<'enc', ~K0, $S, 'wl'>) ) @ #vk.1 )
+              case Corrupt_retained
+              SOLVED // trace found
+            qed
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+lemma after_grace_secret:
+  all-traces
+  "∀ S m K #i #j #g.
+    (((Secret( S, m, K, 'wl' ) @ #i) ∧ (K( m ) @ #j)) ∧
+     (EraseR( S, h(<'enc', K, S, 'wl'>) ) @ #g)) ⇒
+    ((∃ K2 #r.
+       (CorruptS( S, K2 ) @ #r) ∧
+       (¬(∃ #e. (EraseS( S, K ) @ #e) ∧ (#e < #r)))) ∨
+     (∃ #r. (CorruptR( S, h(<'enc', K, S, 'wl'>) ) @ #r) ∧ (#r < #g)))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ S m K #i #j #g.
+  (Secret( S, m, K, 'wl' ) @ #i) ∧
+  (K( m ) @ #j) ∧
+  (EraseR( S, h(<'enc', K, S, 'wl'>) ) @ #g)
+ ∧
+  (∀ K2 #r.
+    (CorruptS( S, K2 ) @ #r) ⇒ ∃ #e. (EraseS( S, K ) @ #e) ∧ #e < #r) ∧
+  (∀ #r. (CorruptR( S, h(<'enc', K, S, 'wl'>) ) @ #r) ⇒ ¬(#r < #g))"
+*/
+simplify
+solve( R_tok( $S, h(<'enc', K, $S, 'wl'>) ) ▶₀ #g )
+  case Advance_01
+  solve( Secret( $S, m, ~K0, 'wl' ) @ #i )
+    case Report_l
+    solve( !SState( $S, ~K0 ) ▶₀ #i )
+      case Enrolled
+      solve( !KU( ~m ) @ #vk )
+        case Report_l
+        solve( !KU( h(<'enc', ~K0, $S, 'wl'>) ) @ #vk.1 )
+          case Corrupt_retained
+          by contradiction /* from formulas */
+        next
+          case c_h
+          solve( !KU( ~K0 ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          qed
+        qed
+      qed
+    qed
+  qed
+next
+  case Advance_12
+  solve( Secret( $S, m, h(<'next', ~K0>), 'wl' ) @ #i )
+    case Report_l
+    solve( !SState( $S, h(<'next', ~K0>) ) ▶₀ #i )
+      case Advance_01
+      solve( !KU( ~m ) @ #vk )
+        case Report_l
+        solve( !KU( h(<'enc', h(<'next', ~K0>), $S, 'wl'>) ) @ #vk.1 )
+          case Corrupt_retained
+          by contradiction /* from formulas */
+        next
+          case c_h
+          solve( !KU( h(<'next', ~K0>) ) @ #vk.5 )
+            case Corrupt_state
+            by contradiction /* cyclic */
+          next
+            case c_h
+            solve( !KU( ~K0 ) @ #vk.11 )
+              case Corrupt_state
+              by contradiction /* cyclic */
+            qed
+          qed
+        qed
+      qed
+    qed
+  qed
+qed
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.10.0
+Maude version 3.5
+Git revision: cb62c305f8c8b8c1e664152aa33c95b7b8d5ef32, branch: master
+Compiled at: 2024-10-30 11:11:02.432289291 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: hibaf_v3_fs_grace.spthy
+
+  processing time: 2.93s
+  
+  forward_secrecy_with_grace (all-traces): verified (64 steps)
+  non_last_windows_secret (all-traces): verified (21 steps)
+  grace_exposure_possible (exists-trace): verified (9 steps)
+  after_grace_secret (all-traces): verified (18 steps)
+
+==============================================================================

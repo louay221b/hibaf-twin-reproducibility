@@ -1,0 +1,37 @@
+theory HiBaF_revocation_fixed
+begin
+/* Revocation-evidence soundness (tag covers the signature (sign-then-tag)).
+   A report is <S, n, C, sig, T>: C is the AEAD ciphertext under the sensor's window key k, sig signs <S, n, C>,
+   and T is the AEAD tag, modelled as a keyed hash. The DT revokes S when T verifies under k and sig does not.
+   The adversary controls the network (Byzantine collector) and may reveal k or the signing key x. */
+builtins: signing, symmetric-encryption, hashing
+
+rule Setup:
+  [ Fr(~k), Fr(~x) ] --[ Setup($S) ]-> [ !Key($S, ~k), !Ltk($S, ~x), !Pk($S, pk(~x)), Out(pk(~x)) ]
+rule Reveal_key:
+  [ !Key($S, k) ] --[ CorruptK($S) ]-> [ Out(k) ]
+rule Reveal_sig_key:
+  [ !Ltk($S, x) ] --[ CorruptX($S) ]-> [ Out(x) ]
+
+rule Honest_report:
+  let C = senc(~m, ~k)
+      sig = sign(<$S, ~n, C>, ~x) in
+  [ !Key($S, ~k), !Ltk($S, ~x), Fr(~m), Fr(~n) ]
+  --[ Report($S, ~n) ]->
+  [ Out(<$S, ~n, C, sig, h(<~k, ~n, C, sig>)>) ]
+
+rule DT_evidence_check:
+  [ !Key($S, k), !Pk($S, pkS), In(<$S, n, C, sig, T>) ]
+  --[ Eq(T, h(<k, n, C, sig>)), Neq(verify(sig, <$S, n, C>, pkS), true), Revoke($S) ]->
+  [ ]
+
+restriction equality:   "All a b #i. Eq(a, b)@i ==> a = b"
+restriction inequality: "All a b #i. Neq(a, b)@i ==> not (a = b)"
+restriction one_registration_per_identity: "All S #i #j. Setup(S)@i & Setup(S)@j ==> #i = #j"
+
+lemma revocation_possible:
+  exists-trace "Ex S #i. Revoke(S)@i"
+
+lemma revocation_soundness:
+  "All S #i. Revoke(S)@i ==> Ex #j. CorruptK(S)@j & #j < #i"
+end

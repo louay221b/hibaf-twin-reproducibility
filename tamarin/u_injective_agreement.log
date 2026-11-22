@@ -1,0 +1,329 @@
+maude tool: 'maude'
+ checking version: 3.5. OK.
+ checking installation: OK.
+[Theory HiBaF_v2_core] Theory loaded
+[Theory HiBaF_v2_core] Theory translated
+[Theory HiBaF_v2_core] Derivation checks started
+[Theory HiBaF_v2_core] Derivation checks ended
+[Theory HiBaF_v2_core] Theory closed
+theory HiBaF_v2_core begin
+
+// Function signature and definition of the equational theory E
+
+functions: fst/1, h/1, pair/2, pk/1, sdec/2, senc/2, sign/2, snd/1,
+           true/0, verify/3
+equations:
+    fst(<x.1, x.2>) = x.1,
+    sdec(senc(x.1, x.2), x.2) = x.1,
+    snd(<x.1, x.2>) = x.2,
+    verify(sign(x.1, x.2), x.1, pk(x.2)) = true
+
+
+
+
+
+
+
+
+
+
+
+rule (modulo E) Register_pk:
+   [ Fr( ~sk ) ]
+  --[ Registered( $A ) ]->
+   [ !Ltk( $A, ~sk ), !Pk( $A, pk(~sk) ), Out( pk(~sk) ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Reveal_ltk:
+   [ !Ltk( $A, sk ) ] --[ RevLtk( $A ) ]-> [ Out( sk ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Enrolled:
+   [ Fr( ~K0 ) ]
+  --[ Pair( $S, $BE, ~K0 ), St( $S, $BE, ~K0 ) ]->
+   [
+   S_st( $S, $BE, ~K0 ), BE_st( $BE, $S, ~K0 ), !SState( $S, $BE, ~K0 ),
+   !BState( $BE, $S, ~K0 )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) S_advance:
+   [ S_st( $S, $BE, K ) ]
+  --[ EraseS( $S, K ), St( $S, $BE, h(<'next', K>) ) ]->
+   [ S_st( $S, $BE, h(<'next', K>) ), !SState( $S, $BE, h(<'next', K>) ) ]
+
+  // loop breaker: [0]
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) BE_advance:
+   [ BE_st( $BE, $S, K ) ]
+  --[ EraseBE( $BE, $S, K ), St( $S, $BE, h(<'next', K>) ) ]->
+   [ BE_st( $BE, $S, h(<'next', K>) ), !BState( $BE, $S, h(<'next', K>) ) ]
+
+  // loop breaker: [0]
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Corrupt_S_state:
+   [ !SState( $S, $BE, K ) ] --[ CorruptS( $S, K ) ]-> [ Out( K ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) Corrupt_BE_state:
+   [ !BState( $BE, $S, K ) ] --[ CorruptBE( $BE, $S, K ) ]-> [ Out( K ) ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) ST_beacon:
+   [ Fr( ~w ), Fr( ~rho ), !Ltk( $ST, skST ) ]
+  --[ Beacon( $ST, ~w, ~rho ) ]->
+   [ Out( <'beacon', $ST, ~w, ~rho, sign(<'beacon', $ST, ~w, ~rho>, skST)> )
+   ]
+
+  /* has exactly the trivial AC variant */
+
+rule (modulo E) S_report:
+   [
+   !SState( $S, $BE, K ), In( <'beacon', $ST, w, rho, sigST> ),
+   !Pk( $ST, pkST ), !Ltk( $S, skS ), Fr( ~m ), Fr( ~nu )
+   ]
+  --[
+  Eq( verify(sigST, <'beacon', $ST, w, rho>, pkST), true ),
+  Sent( $S, $BE, ~m, K, w, rho, ~nu ), Secret( $S, $BE, ~m, K ),
+  UseS( $S, K )
+  ]->
+   [
+   Out( <$S, w, ~nu, 
+         senc(<~m, $S, w, rho, ~nu>, h(<'enc', K, $S, $BE, w, rho>)), 
+         sign(<'rep', $S, w, rho, ~nu, 
+               senc(<~m, $S, w, rho, ~nu>, h(<'enc', K, $S, $BE, w, rho>))>,
+              skS)
+        >
+   )
+   ]
+
+  /*
+  rule (modulo AC) S_report:
+     [
+     !SState( $S, $BE, K ), In( <'beacon', $ST, w, rho, sigST> ),
+     !Pk( $ST, pkST ), !Ltk( $S, skS ), Fr( ~m ), Fr( ~nu )
+     ]
+    --[
+    Eq( z, true ), Sent( $S, $BE, ~m, K, w, rho, ~nu ),
+    Secret( $S, $BE, ~m, K ), UseS( $S, K )
+    ]->
+     [
+     Out( <$S, w, ~nu, 
+           senc(<~m, $S, w, rho, ~nu>, h(<'enc', K, $S, $BE, w, rho>)), 
+           sign(<'rep', $S, w, rho, ~nu, 
+                 senc(<~m, $S, w, rho, ~nu>, h(<'enc', K, $S, $BE, w, rho>))>,
+                skS)
+          >
+     )
+     ]
+    variants (modulo AC)
+    1. $ST   = $ST.25
+       pkST  = pkST.29
+       rho   = rho.30
+       sigST = sigST.31
+       w     = w.33
+       z     = verify(sigST.31, <'beacon', $ST.25, w.33, rho.30>, pkST.29)
+    
+    2. $ST   = $ST.47
+       pkST  = pk(x.90)
+       rho   = rho.52
+       sigST = sign(<'beacon', $ST.47, w.55, rho.52>, x.90)
+       w     = w.55
+       z     = true
+  */
+
+rule (modulo E) BE_ingest:
+   [
+   !BState( $BE, $S, K ),
+   In( <$S, w, nu, 
+        senc(<m, $S, w, rho, nu>, h(<'enc', K, $S, $BE, w, rho>)), sigS>
+   ),
+   In( <'beacon', $ST, w, rho, sigB> ), !Pk( $ST, pkST )
+   ]
+  --[
+  Eq( verify(sigB, <'beacon', $ST, w, rho>, pkST), true ),
+  Accept( $BE, $S, w, nu ), Commit( $BE, $S, m, w, rho, nu ),
+  UseBE( $BE, $S, K )
+  ]->
+   [ ]
+
+  /*
+  rule (modulo AC) BE_ingest:
+     [
+     !BState( $BE, $S, K ),
+     In( <$S, w, nu, 
+          senc(<m, $S, w, rho, nu>, h(<'enc', K, $S, $BE, w, rho>)), sigS>
+     ),
+     In( <'beacon', $ST, w, rho, sigB> ), !Pk( $ST, pkST )
+     ]
+    --[
+    Eq( z, true ), Accept( $BE, $S, w, nu ),
+    Commit( $BE, $S, m, w, rho, nu ), UseBE( $BE, $S, K )
+    ]->
+     [ ]
+    variants (modulo AC)
+    1. $ST   = $ST.24
+       pkST  = pkST.28
+       rho   = rho.29
+       sigB  = sigB.30
+       w     = w.32
+       z     = verify(sigB.30, <'beacon', $ST.24, w.32, rho.29>, pkST.28)
+    
+    2. $ST   = $ST.32
+       pkST  = pk(x.60)
+       rho   = rho.37
+       sigB  = sign(<'beacon', $ST.32, w.40, rho.37>, x.60)
+       w     = w.40
+       z     = true
+  */
+
+restriction equality:
+  "∀ x y #i. (Eq( x, y ) @ #i) ⇒ (x = y)"
+  // safety formula
+
+restriction erasure_S:
+  "∀ S K #r #e.
+    ((CorruptS( S, K ) @ #r) ∧ (EraseS( S, K ) @ #e)) ⇒ (#r < #e)"
+  // safety formula
+
+restriction erasure_BE:
+  "∀ B S K #r #e.
+    ((CorruptBE( B, S, K ) @ #r) ∧ (EraseBE( B, S, K ) @ #e)) ⇒ (#r < #e)"
+  // safety formula
+
+restriction no_use_after_erasure_S:
+  "∀ S K #u #e. ((UseS( S, K ) @ #u) ∧ (EraseS( S, K ) @ #e)) ⇒ (#u < #e)"
+  // safety formula
+
+restriction no_use_after_erasure_BE:
+  "∀ B S K #u #e.
+    ((UseBE( B, S, K ) @ #u) ∧ (EraseBE( B, S, K ) @ #e)) ⇒ (#u < #e)"
+  // safety formula
+
+restriction replay_cache:
+  "∀ be s w nu #i #j.
+    ((Accept( be, s, w, nu ) @ #i) ∧ (Accept( be, s, w, nu ) @ #j)) ⇒
+    (#i = #j)"
+  // safety formula
+
+lemma executable:
+  exists-trace
+  "∃ BE S m w rho nu #i.
+    (((Commit( BE, S, m, w, rho, nu ) @ #i) ∧
+      (¬(∃ x y #r. CorruptS( x, y ) @ #r))) ∧
+     (¬(∃ x y z #r. CorruptBE( x, y, z ) @ #r))) ∧
+    (¬(∃ A #r. RevLtk( A ) @ #r))"
+/*
+guarded formula characterizing all satisfying traces:
+"∃ BE S m w rho nu #i.
+  (Commit( BE, S, m, w, rho, nu ) @ #i)
+ ∧
+  (∀ x y #r. (CorruptS( x, y ) @ #r) ⇒ ⊥) ∧
+  (∀ x y z #r. (CorruptBE( x, y, z ) @ #r) ⇒ ⊥) ∧
+  (∀ A #r. (RevLtk( A ) @ #r) ⇒ ⊥)"
+*/
+by sorry
+
+lemma agreement_aead_only:
+  all-traces
+  "∀ BE S m w rho nu #i.
+    (Commit( BE, S, m, w, rho, nu ) @ #i) ⇒
+    (((∃ K #j. (Sent( S, BE, m, K, w, rho, nu ) @ #j) ∧ (#j < #i)) ∨
+      (∃ K2 #r. CorruptS( S, K2 ) @ #r)) ∨
+     (∃ K2 #r. CorruptBE( BE, S, K2 ) @ #r))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ BE S m w rho nu #i.
+  (Commit( BE, S, m, w, rho, nu ) @ #i)
+ ∧
+  (∀ K #j. (Sent( S, BE, m, K, w, rho, nu ) @ #j) ⇒ ¬(#j < #i)) ∧
+  (∀ K2 #r. (CorruptS( S, K2 ) @ #r) ⇒ ⊥) ∧
+  (∀ K2 #r. (CorruptBE( BE, S, K2 ) @ #r) ⇒ ⊥)"
+*/
+by sorry
+
+lemma injective_agreement:
+  all-traces
+  "∀ BE S m w rho nu #i #i2.
+    ((Commit( BE, S, m, w, rho, nu ) @ #i) ∧
+     (Commit( BE, S, m, w, rho, nu ) @ #i2)) ⇒
+    (#i = #i2)"
+/*
+guarded formula characterizing all counter-examples:
+"∃ BE S m w rho nu #i #i2.
+  (Commit( BE, S, m, w, rho, nu ) @ #i) ∧
+  (Commit( BE, S, m, w, rho, nu ) @ #i2)
+ ∧
+  ¬(#i = #i2)"
+*/
+simplify
+by contradiction /* from formulas */
+
+lemma window_binding:
+  all-traces
+  "∀ BE S m w rho nu #i.
+    (Commit( BE, S, m, w, rho, nu ) @ #i) ⇒
+    ((∃ ST #j. (Beacon( ST, w, rho ) @ #j) ∧ (#j < #i)) ∨
+     (∃ ST #r. RevLtk( ST ) @ #r))"
+/*
+guarded formula characterizing all counter-examples:
+"∃ BE S m w rho nu #i.
+  (Commit( BE, S, m, w, rho, nu ) @ #i)
+ ∧
+  (∀ ST #j. (Beacon( ST, w, rho ) @ #j) ⇒ ¬(#j < #i)) ∧
+  (∀ ST #r. (RevLtk( ST ) @ #r) ⇒ ⊥)"
+*/
+by sorry
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/* All wellformedness checks were successful. */
+
+/*
+Generated from:
+Tamarin version 1.10.0
+Maude version 3.5
+Git revision: cb62c305f8c8b8c1e664152aa33c95b7b8d5ef32, branch: master
+Compiled at: 2024-10-30 11:11:02.432289291 UTC
+*/
+
+end
+
+==============================================================================
+summary of summaries:
+
+analyzed: hibaf_v2_core.spthy
+
+  processing time: 1.59s
+  
+  executable (exists-trace): analysis incomplete (1 steps)
+  agreement_aead_only (all-traces): analysis incomplete (1 steps)
+  injective_agreement (all-traces): verified (2 steps)
+  window_binding (all-traces): analysis incomplete (1 steps)
+
+==============================================================================

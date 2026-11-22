@@ -1,0 +1,83 @@
+theory HiBaF_v3_enrol
+begin
+
+/* HiBaF-Twin enrolment, revision 3 (response to review): SIGMA-I style three-message signed
+   ephemeral Diffie-Hellman with key confirmation.
+     1. S  -> BE : e1, S, BE, X = g^a, Sig_S(e1,S,BE,X)   (also bound to the current window w in the
+                    implementation, so stale requests are rejected before any work; w is not modelled here)
+     2. BE -> S  : e2, S, BE, Y = g^b, Sig_BE(e2,S,BE,X,Y), MAC_Km(e2,BE)
+     3. S  -> BE : e3, S, BE, Sig_S(e3,S,BE,X,Y), MAC_Km(e3,S)
+   Km = H(mac, Z, S, BE, X, Y), K0 = H(enrol, Z, S, BE, X, Y), Z = g^ab.
+   BE installs K0 only after message 3 (fixes the replayed-message-1 key overwrite of v2).
+   Certificates: !Pk facts model TTP-certified public keys (certificate validation succeeds only for
+   registered keys); the TTP never sees ephemerals or K0. Ephemerals are erased after use. */
+
+builtins: diffie-hellman, signing, hashing
+functions: mac/2
+
+rule Register_pk:
+  [ Fr(~sk) ] --[ Registered($A) ]-> [ !Ltk($A, ~sk), !Pk($A, pk(~sk)), Out(pk(~sk)) ]
+
+rule Reveal_ltk:
+  [ !Ltk($A, sk) ] --[ RevLtk($A) ]-> [ Out(sk) ]
+
+rule S_1:
+  [ Fr(~a), !Ltk($S, skS) ]
+  --[ SStart($S, $BE, 'g'^~a) ]->
+  [ S_wait1($S, $BE, ~a), Out(<'e1', $S, $BE, 'g'^~a, sign(<'e1', $S, $BE, 'g'^~a>, skS)>) ]
+
+rule BE_2:
+  let Z  = X^~b
+      Y  = 'g'^~b
+      Km = h(<'mac', Z, $S, $BE, X, Y>)
+      K0 = h(<'enrol', Z, $S, $BE, X, Y>) in
+  [ In(<'e1', $S, $BE, X, sig1>), Fr(~b), !Ltk($BE, skB), !Pk($S, pkS) ]
+  --[ Eq(verify(sig1, <'e1', $S, $BE, X>, pkS), true), BERunning($BE, $S, K0) ]->
+  [ BE_wait3($S, $BE, X, Y, Km, K0),
+    Out(<'e2', $S, $BE, Y, sign(<'e2', $S, $BE, X, Y>, skB), mac(Km, <'e2', $BE>)>) ]
+
+rule S_3:
+  let X  = 'g'^~a
+      Z  = Y^~a
+      Km = h(<'mac', Z, $S, $BE, X, Y>)
+      K0 = h(<'enrol', Z, $S, $BE, X, Y>) in
+  [ S_wait1($S, $BE, ~a), In(<'e2', $S, $BE, Y, sigB, tB>), !Pk($BE, pkB), !Ltk($S, skS) ]
+  --[ Eq(verify(sigB, <'e2', $S, $BE, X, Y>, pkB), true), Eq(tB, mac(Km, <'e2', $BE>)),
+      SCommit($S, $BE, K0), SRunning($S, $BE, K0), SKey($S, $BE, K0) ]->
+  [ Out(<'e3', $S, $BE, sign(<'e3', $S, $BE, X, Y>, skS), mac(Km, <'e3', $S>)>) ]
+
+rule BE_4:
+  [ BE_wait3($S, $BE, X, Y, Km, K0), In(<'e3', $S, $BE, sigS, tS>), !Pk($S, pkS) ]
+  --[ Eq(verify(sigS, <'e3', $S, $BE, X, Y>, pkS), true), Eq(tS, mac(Km, <'e3', $S>)),
+      BECommit($BE, $S, K0), BEKey($BE, $S, K0) ]->
+  [ ]
+
+restriction equality: "All x y #i. Eq(x, y)@i ==> x = y"
+
+lemma executable:
+  exists-trace "Ex S BE K #i #j. SCommit(S, BE, K)@i & BECommit(BE, S, K)@j & #i < #j
+                 & not (Ex A #r. RevLtk(A)@r)"
+
+/* K0 secrecy with perfect forward secrecy, sensor side and back-end side */
+lemma key_secrecy_pfs_S:
+  "All S BE K #i #j. SKey(S, BE, K)@i & K(K)@j ==>
+      (Ex #r. RevLtk(BE)@r & #r < #i)"
+
+lemma key_secrecy_pfs_BE:
+  "All S BE K #i #j. BEKey(BE, S, K)@i & K(K)@j ==>
+      (Ex #r. RevLtk(S)@r & #r < #i)"
+
+/* sensor -> back end agreement */
+lemma agreement_S:
+  "All S BE K #i. SCommit(S, BE, K)@i ==>
+      (Ex #j. BERunning(BE, S, K)@j & #j < #i) | (Ex #r. RevLtk(BE)@r & #r < #i)"
+
+/* back end -> sensor injective agreement: BE installs K0 only for a session the sensor completed,
+   once per such session. A replayed message 1 cannot make BE install a key. */
+lemma injective_agreement_BE:
+  "All S BE K #i. BECommit(BE, S, K)@i ==>
+      ((Ex #j. SRunning(S, BE, K)@j & #j < #i
+        & not (Ex BE2 S2 #i2. BECommit(BE2, S2, K)@i2 & not (#i2 = #i))))
+      | (Ex #r. RevLtk(S)@r & #r < #i)"
+
+end
