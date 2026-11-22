@@ -25,3 +25,6 @@ jobs:
         run: python reference_model/test_hibaf_v2.py
       - name: Check deferred AES-GCM associated data and nonce retirement
         run: python reference_model/test_deferred_ad.py
+
+      - name: Run original v33 suite (36 checks)
+        run: python reference_model/v33/test_hibaf_v2.py

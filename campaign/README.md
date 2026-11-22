@@ -61,3 +61,7 @@ These supplementary experiments are not part of the historical `campaign.py` run
 ### Original advisor analysis script
 
 The original `an.py` sent with the sensitivity checks is preserved verbatim in [`campaign/an.py`](an.py). It expects raw run directories at `runs/*/summary.csv`, `/home/claude/sim/runs_beaconfix/` and `/home/claude/sim/runs_hwall/`, and is **not portable as written**. For independent reproduction, use [`analyze_sens.py`](analyze_sens.py) with the required per-seed baseline CSV and per-run sensitivity summaries. The original absolute paths are retained solely to document the analysis as supplied; neither script fabricates missing run files.
+
+## Final v33 campaign (restored source)
+
+For the corrected main experiment, build `ns3/hibaf-sim_v33.cc` under the scratch name `hibaf-sim.cc` (do not use the historical simulator). Run `python3 campaign/campaign_hw_all.py` and `python3 campaign/campaign_hw3_beaconfix.py`. The first grid has 2,670 runs and the second 510; the 180 matching A runs must not be counted twice. See `results/verify_run_inventory.py`, which requires the original two CSVs. For the updated B1 audit sensitivity checks use the separate `hibaf-sim_sensitivity.cc` source. Scripts and historical datasets remain intact. No new experiment was run by restoring these files.
