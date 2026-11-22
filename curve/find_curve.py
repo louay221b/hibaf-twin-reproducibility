@@ -12,8 +12,10 @@ if N is prime, N lies in the Hasse-Weil interval and N*D = O for a random D != O
 actual curve, then ord(D) = N divides #J, and because the Hasse-Weil interval
 [(sqrt p - 1)^4, (sqrt p + 1)^4] has width < N, #J = N.
 """
-import sys, os, random, json, math
-import os; sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "reference_model"))
+import sys, random, json, math
+from pathlib import Path
+HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE.parent / "reference_model"))
 from sympy import isprime, ZZ
 from sympy.ntheory import sqrt_mod
 from sympy.polys.matrices import DomainMatrix
@@ -111,4 +113,5 @@ if __name__ == "__main__":
                 if certify(p, a, N, rng):
                     found.append(dict(c=c, p=p, a=a, N=N)); print("  CERTIFIED a =", a, "N =", N, flush=True); break
             if found: break
-    json.dump(found[0], open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "curve.json"), "w"), indent=1)
+    with (HERE / "curve.json").open("w", encoding="utf-8") as fh:
+        json.dump(found[0], fh, indent=1)
