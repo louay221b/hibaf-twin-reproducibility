@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Recalibration with measured ESP32 and Pi 4 costs: mean and 95% CI over 30 runs."""
+"""Current 0.61 ms/HECM back-end calibration with measured ESP32 and Pi 4 costs: mean and 95% CI over 30 runs."""
 import glob, os
 from pathlib import Path
 import pandas as pd, numpy as np
 from scipy import stats
 ROOT = Path(__file__).resolve().parents[1]
-RUNS = Path(os.environ.get("HIBAF_RUNS_DIR", str(ROOT / "runs_beaconfix")))
-OUT = ROOT / "results" / "generated" / "v33"
+RUNS = Path(os.environ.get("HIBAF_RUNS_DIR", str(ROOT / "runs_beaconfix_0p61ms")))
+OUT = ROOT / "results" / "generated" / "backend_0p61ms"
 OUT.mkdir(parents=True, exist_ok=True)
 rows = []
 for f in glob.glob(str(RUNS / "*hwPi*" / "summary.csv")):

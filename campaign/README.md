@@ -20,7 +20,7 @@ Set `HIBAF_NS3_BIN` for a nondefault simulator binary path, and `HIBAF_RUNS_DIR`
 - `campaign_rev.py`, `campaign_replay.py` — auxiliary defenses/replay campaigns from the supplied latest ZIP.
 - `campaign_sens.py`, `analyze_sens.py` — previously supplied independent audit/backend sensitivity experiments (0.10, 0.86, 1.19 ms and B1 audit-rate variations), whose baselines are **not** the current 0.61 ms campaign.
 - `campaign_common.py` — common 0.10 ms **auxiliary** runner imported by the above supplemental scripts, not an alternative main-calibration driver.
-- `analyze.py`, `analyze_hwall.py`, `analyze_pi_beaconfix.py`, `analyze_replay.py`, and related scripts — archive analysis, but require the corresponding raw summaries/CSVs before outputs can be reproduced.
+- `analyze.py`, `analyze_hwall.py`, `analyze_pi_beaconfix.py`, `analyze_replay.py`, and related scripts — reproducibility analyses. `analyze_hwall.py` and `analyze_pi_beaconfix.py` now read the active `runs_*_0p61ms` directories and write to `results/generated/backend_0p61ms/`; all analysis scripts require the corresponding raw summaries/CSVs.
 
 For the `--indTheta` flag compile `../ns3/hibaf-sim_sensitivity.cc` in place of the main simulator, then run the sensitivity campaign separately; do not use it to recreate the main run grid without identifying that variant.
 

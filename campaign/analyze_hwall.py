@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-"""Summaries of the hardware-calibrated campaign (runs_hwall/, tags HW_*), and scalability figure."""
+"""Summaries of the current 0.61 ms/HECM campaign (runs_hwall_0p61ms/, tags HW_*), and scalability figure."""
 import glob, os, json
 from pathlib import Path
 import numpy as np, pandas as pd
 from scipy import stats
 import matplotlib; matplotlib.use("Agg"); import matplotlib.pyplot as plt
 ROOT = Path(__file__).resolve().parents[1]
-RUNS = Path(os.environ.get("HIBAF_RUNS_DIR", str(ROOT / "runs_hwall")))
-OUT = ROOT / "results" / "generated" / "v33"
+RUNS = Path(os.environ.get("HIBAF_RUNS_DIR", str(ROOT / "runs_hwall_0p61ms")))
+OUT = ROOT / "results" / "generated" / "backend_0p61ms"
 OUT.mkdir(parents=True, exist_ok=True)
 rows = []
 for f in glob.glob(str(RUNS / "*/summary.csv")):
@@ -44,7 +44,7 @@ if (D.tagx == "HW_R").any():
 if (D.tagx == "HW_G").any(): show("G", S("HW_G", ["reportInterval", "pondSpacing", "beaconStagger"], ["pdr"]))
 if (D.tagx == "HW_BEsens").any():
     be = S("HW_BEsens", ["variant"], ["pdr", "e2eMean"]); a5 = S("HW_A", ["variant", "nSensors"], ["pdr", "e2eMean"]); a5 = a5[a5.nSensors == 500]
-    m = be.merge(a5, on="variant", suffixes=("_be119", "_be010")); m["delay_rise_ms"] = 1000 * (m.e2eMean_be119 - m.e2eMean_be010); show("BEsens", m)
+    m = be.merge(a5, on="variant", suffixes=("_be119", "_be061")); m["delay_rise_ms"] = 1000 * (m.e2eMean_be119 - m.e2eMean_be061); show("BEsens", m)
 for k, v in res.items(): v.to_csv(OUT / f"hwall_{k}.csv", index=False)
 if "A" in res:
     STYLE = {"msm": dict(color="#2a78d6", marker="o", label="HiBaF-MSM (proposed)"), "ind": dict(color="#eb6834", marker="s", label="Individual verification (B1)"),
