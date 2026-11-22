@@ -27,7 +27,7 @@ for k, g in D.groupby(["scen", "plat", "nSensors", "reportInterval", "attackers"
     for m in M:
         mu, h, n = ci(g[m]); r[m] = mu; r[m + "_ci"] = h; r["n"] = n
     out.append(r)
-S = pd.DataFrame(out); S.to_csv(TABLES / "rev_H_hw.csv", index=False)
+S = pd.DataFrame(out); S.to_csv(ROOT / "results" / "rev_H_hw.csv", index=False)
 print(S[["scen","plat","nSensors","reportInterval","attackers","variant","n"]+M].to_string(float_format=lambda x: f"{x:.4g}"))
 mx = max((S[m+"_ci"]/S[m]).max() for m in ["pdr","syncSuccess","e2eP95","energyPerReport_mJ","hecmPerVerified"])
 print("max relative CI half-width (selected metrics): %.2f%%" % (100*mx))
