@@ -23,3 +23,5 @@ jobs:
         run: python -m compileall -q analytic campaign crypto_level1 curve reference_model platform
       - name: Run all reference-model regression checks
         run: python reference_model/test_hibaf_v2.py
+      - name: Check deferred AES-GCM associated data and nonce retirement
+        run: python reference_model/test_deferred_ad.py
