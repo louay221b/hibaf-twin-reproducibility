@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Figures/tables for the analytical evaluation: Monte Carlo (from eval_analytic.py CSVs), scalability, energy."""
 import json, math, os
+from pathlib import Path
 import numpy as np, pandas as pd
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import importlib.util
-spec = importlib.util.spec_from_file_location("ea", "/home/claude/sim/eval_analytic.py"); ea = importlib.util.module_from_spec(spec); spec.loader.exec_module(ea)
+ROOT = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location("ea", ROOT / "analytic" / "eval_analytic.py")
+ea = importlib.util.module_from_spec(spec); spec.loader.exec_module(ea)
 OUT = ea.OUT; C1 = ea.C1
 def c_msm(k):
     """MSM batch cost (HECM) over k reports; beyond the largest measured batch (500) extrapolated linearly
@@ -69,7 +72,8 @@ scal = dict(N=N, theta025_dw30_base=1000*30/be_base(0.25), theta025_dw30_msm=flo
 json.dump(scal, open(f"{OUT}/scalability.json", "w"), indent=1); print(json.dumps(scal, indent=1))
 
 # ---------- Energy (draft Section VI-F: E = P_active * T)
-plat = json.load(open("/home/claude/plat/platform_estimates.json"))["rows"]
+with (ROOT / "platform" / "platform_estimates.json").open(encoding="utf-8") as fh:
+    plat = json.load(fh)["rows"]
 P_ESP, P_PI = 0.264, 3.4                       # W (draft: 3.3 V x 80 mA; Raspberry Pi 4 active)
 T_BLAKE, T_AES = 0.0174, 0.075                  # ms (draft ESP32 values)
 esp_ratio_indiv = plat["indiv"]["esp32_insns"] / plat["hecm"]["esp32_insns"]

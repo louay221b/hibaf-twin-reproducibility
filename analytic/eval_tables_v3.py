@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """LaTeX tables for the restructured evaluation (all values computed here from result files)."""
 import json, math, importlib.util
+from pathlib import Path
 import pandas as pd
-spec = importlib.util.spec_from_file_location("ea2", "/home/claude/sim/eval_analytic2.py")
+ROOT = Path(__file__).resolve().parents[1]
+spec = importlib.util.spec_from_file_location("ea2", ROOT / "analytic" / "eval_analytic2.py")
 import sys
 ea2 = importlib.util.module_from_spec(spec); spec.loader.exec_module(ea2)
 c_msm, C1 = ea2.c_msm, ea2.C1
-T = "/home/claude/paper_v3/tables"
-import os; os.makedirs(T, exist_ok=True)
+T = ROOT / "analytic" / "generated_tables"
+T.mkdir(parents=True, exist_ok=True)
 out = {}
 
 # ---------- operation counts per reporting window (all valid), example deployment
@@ -88,11 +90,12 @@ for Nsite in [500, 1000, 2000, 4000]:
 out["B2"] = b2
 S3, P3 = 100, 4
 out["B3"] = dict(S=S3, P=P3, base_saved=2*S3 + 2*P3 + 1, msm_saved=(S3 + P3)*C1 + 1)
-json.dump(out, open("/home/claude/sim/analytic/tables_v3.json", "w"), indent=1, default=float)
+with (ROOT / "analytic" / "tables_v3.json").open("w", encoding="utf-8") as fh:
+    json.dump(out, fh, indent=1, default=float)
 print(json.dumps(out, indent=1, default=float))
 
 # ---------- energy table (from analytic/energy.csv)
-E = pd.read_csv("/home/claude/sim/analytic/energy.csv").set_index("cost")
+E = pd.read_csv(ROOT / "analytic" / "energy.csv").set_index("cost")
 cols = [("earlier", "earlier values"), ("emu_low", "emulated, low"), ("emu_high", "emulated, high")]
 def fmt(x, d=2): return f"{x:.{d}f}"
 lines = []
