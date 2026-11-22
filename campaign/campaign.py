@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """HiBaF v2 ns-3 campaign runner: scenarios A-F, 30 independent RNG runs per configuration.
-Each run writes its own summary.csv under runs/<job>/ ; merge.py concatenates them."""
+Each run writes its own summary.csv under runs/<job>/; analyze.py consolidates them."""
 import itertools, os, subprocess, sys, json, time
 from multiprocessing import Pool
+from pathlib import Path
 
-BIN = "/home/claude/ns3/ns-3.49/build/scratch/hibaf/ns3.49-hibaf-sim-optimized"
-OUT = "/home/claude/sim/runs"
+ROOT = Path(__file__).resolve().parents[1]
+BIN = os.environ.get("HIBAF_NS3_BIN", str(ROOT / "ns-3.49" / "build" / "scratch" / "hibaf" / "ns3.49-hibaf-sim-optimized"))
+OUT = os.environ.get("HIBAF_RUNS_DIR", str(ROOT / "runs"))
 SEEDS = range(1, 31)
 
 def jobs():
@@ -63,6 +65,8 @@ def run(a):
     return time.time() - t
 
 if __name__ == "__main__":
+    if not Path(BIN).is_file():
+        raise SystemExit(f"ns-3 binary not found: {BIN}. Build ns-3.49 or set HIBAF_NS3_BIN.")
     J = jobs()
     # heavy jobs first for better load balance
     J.sort(key=lambda a: -(a.get("nSensors", 100) / a.get("reportInterval", 10)))
