@@ -1,9 +1,15 @@
 """HiBaF signatures, MSM batch verification and 64-byte canonical encoding on the certified curve
 C: y^2 = x^5 + 8 over F_p, p = 2^127 - 2437, #J = N (prime, 254 bits)."""
 import sys, json, random, hashlib, time
-sys.path.insert(0, "/home/claude/audit")
+from pathlib import Path
+ROOT = Path(__file__).resolve().parents[1]
+CURVE_DIR = Path(__file__).resolve().parent
+sys.path.insert(0, str(ROOT / "reference_model"))
 from g2toy import Jacobian
-c = json.load(open("/home/claude/curve/curve.json")); V = json.load(open("/home/claude/curve/curve_validation.json"))
+with (CURVE_DIR / "curve.json").open(encoding="utf-8") as fh:
+    c = json.load(fh)
+with (CURVE_DIR / "curve_validation.json").open(encoding="utf-8") as fh:
+    V = json.load(fh)
 p, a, N = c["p"], c["a"], c["N"]
 J = Jacobian(p, [a, 0, 0, 0, 0, 1])
 L = (tuple(int(t) for t in V["generator_L"]["u"]), tuple(int(t) for t in V["generator_L"]["v"]))
@@ -77,4 +83,5 @@ Ub = bytearray(sigs[0][2]); Ub[-1] ^= 1
 try: dec(bytes(Ub)); res["offcurve_rejected"] = False
 except ValueError: res["offcurve_rejected"] = True
 print(json.dumps(res, indent=1))
-json.dump(res, open("/home/claude/curve/real_curve_test.json", "w"), indent=1)
+with (CURVE_DIR / "real_curve_test.json").open("w", encoding="utf-8") as fh:
+    json.dump(res, fh, indent=1)
