@@ -1,20 +1,17 @@
 # HiBaF-Twin reference model
 
-This directory contains the executable Python reference model and 35 regression checks reported in Table III of the HiBaF-Twin manuscript.
+The archived core suite currently contains **35 regression checks**. The independent supplemental test `test_deferred_ad.py` covers the 36th check reported in the revised manuscript: AES-GCM with deferred associated data (only the final tag is transmitted; a failure before completion retires the nonce).
 
 ## Run
 
-Requires Python 3 and the `cryptography` package.
+Requires Python 3 and `cryptography`.
 
 ```bash
 python -m pip install cryptography
-python test_hibaf_v2.py
+python reference_model/test_hibaf_v2.py
+python reference_model/test_deferred_ad.py
 ```
 
-Expected final line: `35/35 checks passed`.
+Expected outcomes: `35/35 checks passed` and `1/1 deferred-associated-data regression check passed`, respectively. The existing `test_output.txt` is an archived 35-check transcript and is not rewritten or presented as a fresh run.
 
-The additional check tests two cases: byte-identical copies of a pending report are dropped before consuming the per-identity quota or entering MSM verification; distinct valid reports sharing an (ID, nonce) produce equivocation evidence.
-
-**Scope:** `g2toy.py` uses an intentionally small toy genus-2 Jacobian for correctness tests only. This test suite does not establish production-level cryptographic security or replace the hardware, curve-certificate, Tamarin, or ns-3 experiments.
-
-Other directories at the repository root were already present and are not changed by this update.
+**Scope:** `g2toy.py` uses a deliberately small toy genus-2 Jacobian for functional testing. These checks do not independently establish real-curve cryptographic security or re-execute the ns-3, physical hardware, or Tamarin experiments.
