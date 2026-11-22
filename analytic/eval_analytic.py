@@ -41,7 +41,7 @@ def bisect(inv, cost):
         mid = l + m // 2
         return c + rec(l, mid) + rec(mid, r)
     return rec(0, n) if n else 0.0
-GAMMA = 1000.0 / 4.20                                         # budget: 1 s at 4.2 ms/HECM (as in ns-3)
+GAMMA = 1000.0 / 1.706  # 1 s at the measured Pi 4 cost (v33 archive)
 def p_any(mu, k): return 1 - (1 - mu)**k
 def exp_cost(b, g, mu):
     if g == 1: return c_msm(b) + p_any(mu, b) * b * C1
