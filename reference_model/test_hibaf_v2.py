@@ -274,56 +274,59 @@ check("grace retention at an epoch boundary: |T| = %d window keys per sensor, al
       isinstance(ret, dict) and len(ret) == len(REPORT_TYPES) and {k[0] for k in ret} == {wl_b}
       and {k[2] for k in ret} == set(REPORT_TYPES))
 
-# [review 11] Test 35: exact duplicate pending before quota and MSM; distinct same-nonce variant retains evidence.
-# Use isolated entities so this regression test does not depend on earlier windows or revocations.
-def test_35_pending_and_equivocation():
-    import hibaf_v2_ref as h
-    rng35 = random.Random(20261027)
-    ttp35 = h.TTP(rng35)
-    st35 = h.Station("ST35", ttp35, rng35)
-    be35 = h.BackEnd("BE35", ttp35, rng35)
-    c35 = h.Collector("B35", ttp35, rng35, quota=2)
-    s35 = h.Sensor("S35", ttp35, rng35)
-    m1 = s35.enrol_start(be35.id)
-    m2 = be35.enrol(m1)
-    if m2 is None: return False
-    m3 = s35.enrol_finish(m2, be35.P)
-    if not be35.enrol_confirm(m3): return False
-    s35.link_key(c35.id, c35.Y); c35.add_sensor(s35)
+# [replay injection] byte-identical copies of a report that is still pending (same batch) are dropped before the
+# quota and before any group operation; a DIFFERENT report reusing the same (ID, nonce) is still verified
+# (equivocation evidence preserved)
+wq = w_far + 3; rlq = ttp.rl_object(wq); bcq, rhoq = st.beacon(wq, rlq)
+for s_ in sensors: s_.accept_beacon(bcq, st.P, ttp.P)
+col0 = cols[0]; col0.new_window(wq, rhoq, rlq)
+s_v = [s_ for s_ in sensors if s_.id in col0.links][0]
+rep1 = s_v.report(b"t1", 1, 10*wq)
+s_v.c -= 1                                                            # same nonce, different content (equivocation)
+rep2 = s_v.report(b"t2", 1, 10*wq + 1)
+same_nonce = rep2[4] == rep1[4] and rep2 != rep1
+before_tests = col0.stats.get("pending_dup", 0); before_q = col0.count.get(s_v.id, 0); ev_before = len(col0.evidence)
+col0.process([rep1] * 6 + [rep2])
+dup_ok = col0.stats.get("pending_dup", 0) - before_tests == 5 and col0.count.get(s_v.id, 0) - before_q == 2
+check("pending duplicates: 5 exact copies dropped before quota/verification; a different report with the same nonce still yields equivocation evidence",
+      dup_ok and same_nonce and len(col0.evidence) == ev_before + 1)
 
-    def start_window(w):
-        rl = ttp35.rl_object(w)
-        beacon, rho = st35.beacon(w, rl)
-        assert s35.accept_beacon(beacon, st35.P, ttp35.P)
-        c35.new_window(w, rho, rl)
-
-    start_window(1)
-    original = s35.report(b"ok", tau=1, t=10)
-    sizes = []
-    old_verify = h.verify_with_controller
-    def tracked_verify(items, ctrl, rng):
-        sizes.append(len(items))
-        return old_verify(items, ctrl, rng)
-    h.verify_with_controller = tracked_verify
-    try:
-        c35.process([original, original])
-    finally:
-        h.verify_with_controller = old_verify
-    exact_copy_ok = (c35.count.get(s35.id) == 1
-                     and c35.stats["quota_drop"] == 0
-                     and sizes == [1])
-
-    start_window(2)
-    deliberate_nonce_reuse = b"\x35" * 12  # negative test only; not normal sensor behavior
-    a = s35.report(b"A", tau=1, t=20, nonce_override=deliberate_nonce_reuse)
-    b = s35.report(b"B", tau=1, t=21, nonce_override=deliberate_nonce_reuse)
-    c35.process([a, b])
-    variant_ok = (len(c35.evidence) == 1
-                  and c35.evidence[0][0][:8] == a[:8]
-                  and c35.evidence[0][1][:8] == b[:8])
-    return exact_copy_ok and variant_ok
-
-check("exact copies pending dropped before quota and MSM; same-nonce variant still gives evidence",
-      test_35_pending_and_equivocation())
+# [v20] check 36: deferred associated data. The sensor makes two GCM calls with the same key and nonce; only the
+# final tag (associated data include U_i, s_i) may leave the sensor, and a failure between the two calls must
+# retire the nonce (no second encryption under it).
+import hibaf_v2_ref as _ref
+from cryptography.exceptions import InvalidTag
+wt = wq + 1; rlt = ttp.rl_object(wt); bct, rhot = st.beacon(wt, rlt)
+acc_t = s_v.accept_beacon(bct, st.P, ttp.P)
+m_t = b"DO=7.1"
+rep_t = s_v.report(m_t, 1, 10*wt)
+ID_t, w_t, t_t, tau_t, nu_t, CT_t, Ub_t, s_t = rep_t[:8]
+k_t = PRF(s_v.nvm["K"], "enc", s_v.id, s_v.be_id, w_t, rhot, tau_t, n=16)
+AD0_t = H("AD", s_v.id, w_t, rhot, tau_t, t_t, nu_t)
+T0 = AESGCM(k_t).encrypt(nu_t, m_t, AD0_t)[-16:]                     # the preliminary (discarded) tag
+wire = b"".join(x if isinstance(x, (bytes, bytearray)) else str(x).encode() for x in rep_t)
+final_ok = AESGCM(k_t).decrypt(nu_t, CT_t, ad_full(ID_t, w_t, rhot, tau_t, t_t, nu_t, Ub_t, s_t)) == m_t
+try:
+    AESGCM(k_t).decrypt(nu_t, CT_t, AD0_t); prelim_accepts = True
+except InvalidTag:
+    prelim_accepts = False
+C_first = AESGCM(k_t).encrypt(nu_t, m_t, AD0_t)[:-16]                    # ciphertext of the first call
+contract = len(nu_t) == 12 and len(CT_t) - len(C_first) == 16 and CT_t[:-16] == C_first   # 96-bit nonce, 128-bit tag, same ciphertext
+only_final = T0 not in wire and CT_t[-16:] != T0 and final_ok and not prelim_accepts and contract
+_orig_sign = _ref.sign
+def _fail(*a, **k): raise RuntimeError("injected failure between the two GCM calls")
+_ref.sign = _fail
+c_before = s_v.c
+try:
+    s_v.report(b"DO=7.2", 1, 10*wt + 1); failed = False
+except RuntimeError:
+    failed = True
+finally:
+    _ref.sign = _orig_sign
+nu_failed = s_v.r.to_bytes(8, "big") + (c_before + 1).to_bytes(4, "big")
+rep_n = s_v.report(b"DO=7.3", 1, 10*wt + 2)
+retired = failed and s_v.c == c_before + 2 and rep_n[4] != nu_failed
+check("deferred AD: one 128-bit tag per 96-bit nonce, both calls give the same ciphertext, only the final tag is released (the preliminary tag is absent and does not verify); a failure between the calls retires the nonce",
+      acc_t and only_final and retired)
 
 print(f"\n{sum(r for _, r in RESULTS)}/{len(RESULTS)} checks passed")

@@ -1,6 +1,8 @@
 import sys, time
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'campaign'))
 from multiprocessing import Pool
-import campaign as C0
+import campaign_common as C0
 J=[]
 for v in ["msm","ind"]:
     for r in C0.SEEDS:

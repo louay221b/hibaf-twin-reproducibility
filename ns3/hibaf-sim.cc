@@ -65,6 +65,8 @@ struct Cfg
     double attackRate = 0.1, attackStart = 60;
     bool defenses = true; // negative cache + quota + revocation
     double outsiderRate = 0.0;
+    double replayRate = 0.0;       // replayed frames/s per pond (outsider that records honest frames)
+    double replayOldFrac = 0.5;    // share of replays taken from earlier windows (rest: current window)
     bool evidence = true;          // revocation requires BE-validated evidence (GCM check)
     double byzNoticeRate = 0.0;    // false accusations/s sent by Byzantine collector 0
     bool sharedChannel = false;    // all ponds on one 802.15.4 channel
@@ -227,6 +229,7 @@ struct Rec
     int64_t genNs;
     uint8_t valid, attacker;
     uint16_t col;
+    uint8_t replay; // instrumentation only: byte-identical copy injected by the replay attacker
 };
 #pragma pack(pop)
 enum MsgType : uint8_t
@@ -360,6 +363,9 @@ struct Stats
     double firstInvalid = -1, firstNotice = -1, revIssue = -1;
     std::map<uint32_t, double> revInstall; // collector -> time
     uint64_t falseRevoked = 0, noticesRejected = 0, noticesReceived = 0;
+    uint64_t dupPendingHonest = 0, rpDropPending = 0;
+    uint64_t rpSent = 0, rpDropMacWin = 0, rpDropCache = 0, rpDropQuota = 0, rpVerified = 0, rpDupVerify = 0, rpBeDup = 0, rpBenign = 0;
+    double rpHecmCol = 0;
     uint64_t rlBytes = 0;
     double beHecm = 0, stHecm = 0;
     uint64_t sensorWindows = 0, sensorWindowsMissed = 0;
@@ -374,6 +380,7 @@ struct BackEnd;
 static std::vector<Collector*> g_cols;
 static Station* g_st = nullptr;
 static BackEnd* g_be = nullptr;
+static std::vector<std::deque<std::pair<double, Rec>>> g_capture; // per pond: honest frames overheard by the replay attacker
 
 struct Sensor
 {
@@ -384,6 +391,7 @@ struct Sensor
     Ipv6Address colAddr;
     Cpu cpu;
     int64_t curWindow = -1;
+    int64_t pendingWindow = -1; // window of the beacon currently being verified
     uint32_t seq = 0;
     Ptr<UniformRandomVariable> rv;
     double Interval(double t) const
@@ -415,7 +423,8 @@ struct Sensor
             }
             else
             {
-                double ms = C.tHecmSensor + C.tAeadSensor + 3 * C.tHashSensor; // sign + AEAD + KDF/H2/MAC
+                double ms = C.variant == "sym" ? C.tAeadSensor + 2 * C.tHashSensor               // sym: AEAD + KDF/MAC, no signature
+                                                 : C.tHecmSensor + C.tAeadSensor + 3 * C.tHashSensor; // sign + AEAD + KDF/H2/MAC
                 double done = cpu.Run(ms);
                 if (now >= C.warmup)
                     S.sensorCpuMs += ms;
@@ -447,6 +456,14 @@ struct Sensor
         tx->SendTo(Create<Packet>(b.data(), b.size()), 0, Inet6SocketAddress(colAddr, 9000));
         if (!r.attacker && Simulator::Now().GetSeconds() >= C.warmup)
             S.sent++;
+        if (C.replayRate > 0 && !r.attacker && pond < g_capture.size())
+        {
+            auto& cq = g_capture[pond];
+            double now = Simulator::Now().GetSeconds();
+            cq.emplace_back(now, r);
+            while (!cq.empty() && cq.front().first < now - 3 * C.window)
+                cq.pop_front();
+        }
     }
     void OnBeacon(Ptr<Socket> s)
     {
@@ -458,8 +475,9 @@ struct Sensor
             if (d[0] != M_BEACON_S)
                 continue;
             uint32_t w = Get<uint32_t>(d.data() + 1);
-            if ((int64_t)w <= curWindow)
-                continue; // repeat or old (monotonic rule)
+            if ((int64_t)w <= curWindow || (int64_t)w <= pendingWindow)
+                continue; // repeat or old (monotonic rule); a copy received while the first is still being verified is dropped (Algorithm 1: once per window)
+            pendingWindow = w;
             // verify station signature + TTP RL signature: 2 x (2-term MSM | 2 HECM | sym MAC)
             double ms = C.variant == "sym" ? 0.05 : 2 * Indiv() * C.tHecmSensor;
             double done = cpu.Run(ms);
@@ -495,6 +513,7 @@ struct Collector
     int64_t curWindow = -1;
     double windowStart = 0;
     std::set<std::pair<uint32_t, uint32_t>> accepted;
+    std::set<std::pair<uint32_t, uint32_t>> pending; // pre-filtered, not yet verified (byte-identical copies dropped)
     std::set<uint32_t> neg, revoked;
     std::map<uint32_t, uint32_t> count;
     std::deque<Pending> q;
@@ -536,7 +555,9 @@ struct Collector
                      ((int64_t)r.window == curWindow - 1 && now < windowStart + C.grace);
         if (!winOk)
         {
-            if (cnt && !r.attacker)
+            if (cnt && r.replay)
+                S.rpDropMacWin++;
+            else if (cnt && !r.attacker)
                 S.windowDrop++;
             return;
         }
@@ -557,13 +578,33 @@ struct Collector
         {
             if (cnt)
                 S.replayDrop++;
+            if (cnt && r.replay)
+                S.rpDropCache++;
+            return;
+        }
+        if (pending.count(key))
+        { // byte-identical copy of a report already waiting for verification
+            if (cnt)
+                S.replayDrop++;
+            if (cnt && r.replay)
+                S.rpDropPending++;
+            else if (cnt)
+                S.dupPendingHonest++;
             return;
         }
         if (C.defenses && ++count[r.sensor] > Quota())
         {
             if (cnt)
                 S.quotaDrop++;
+            if (cnt && r.replay)
+                S.rpDropQuota++;
             return;
+        }
+        pending.insert(key);
+        if (cnt && r.replay)
+        {
+            S.rpVerified++; // a replay that reaches signature verification (original not yet verified)
+            S.rpHecmCol += C.variant == "ind" ? C_IND_MSM : 0.0;
         }
         r.col = id;
         if (C.variant == "sym")
@@ -627,37 +668,19 @@ struct Collector
         }
         uint32_t take = std::min<uint32_t>(q.size(), C.variant == "msm" ? std::max<uint32_t>(b, 1) : 512);
         if (C.variant == "msm" && take < b)
-        {
-            const double budget =
-                C.budgetTime * 1000.0 / C.tHecmCol;
-
+        { // fewer than planned (timer flush): re-decide g for actual size
+            g = 1;
             double best = 1e18;
-            bool found = false;
-
             for (uint32_t gg : {1u, 2u, 4u, 8u, 16u})
-            {
-                if (gg > take || take % gg != 0)
-                    continue;
-
-                if (take > 1 && ctrl.Worst(take, gg) > budget)
-                    continue;
-
-                double cost = ctrl.Expected(take, gg);
-
-                if (cost < best)
+                if (gg <= take)
                 {
-                    best = cost;
-                    g = gg;
-                    found = true;
+                    double c = ctrl.Expected(take, gg);
+                    if (c < best)
+                    {
+                        best = c;
+                        g = gg;
+                    }
                 }
-            }
-
-            if (!found)
-            {
-                // Fall back to one individual verification
-                take = 1;
-                g = 1;
-            }
         }
         std::vector<Pending> batch(q.begin(), q.begin() + take);
         q.erase(q.begin(), q.begin() + take);
@@ -688,6 +711,7 @@ struct Collector
         for (size_t i = 0; i < batch.size(); ++i)
         {
             bool cnt = batch[i].arrive >= C.warmup;
+            pending.erase(std::make_pair(batch[i].r.sensor, batch[i].r.seq));
             if (!valid[i])
             {
                 if (cnt)
@@ -703,7 +727,11 @@ struct Collector
             }
             auto key = std::make_pair(batch[i].r.sensor, batch[i].r.seq);
             if (accepted.count(key))
+            {
+                if (cnt && batch[i].r.replay)
+                    S.rpDupVerify++;
                 continue;
+            }
             accepted.insert(key);
             if (cnt)
             {
@@ -1012,7 +1040,13 @@ struct BackEnd
             }
             auto key = std::make_pair(r.sensor, r.seq);
             if (g_committedKeys.count(key))
+            {
+                if (r.replay && gen >= C.warmup)
+                    S.rpBeDup++;
                 continue; // BE in-loop dedupe
+            }
+            if (r.replay && gen >= C.warmup)
+                S.rpBenign++; // replay of a genuine report whose original was lost: delivers the honest data once
             g_committedKeys.insert(key);
             if (gen < C.warmup)
                 continue;
@@ -1113,6 +1147,8 @@ main(int argc, char* argv[])
     cmd.AddValue("beaconStagger", "per-collector beacon rebroadcast offset s", C.beaconStagger);
     cmd.AddValue("pondSpacing", "m between pond centres (shared channel)", C.pondSpacing);
     cmd.AddValue("outsiderRate", "forged frames/s per pond (bad MAC)", C.outsiderRate);
+    cmd.AddValue("replayRate", "replayed frames/s per pond (byte-identical copies of overheard honest frames)", C.replayRate);
+    cmd.AddValue("replayOldFrac", "share of replays from earlier windows", C.replayOldFrac);
     cmd.AddValue("burstStart", "s (<0 none)", C.burstStart);
     cmd.AddValue("burstDur", "s", C.burstDur);
     cmd.AddValue("burstInterval", "s", C.burstInterval);
@@ -1133,6 +1169,7 @@ main(int argc, char* argv[])
     Config::SetDefault("ns3::TcpSocket::SegmentSize", UintegerValue(1400));
 
     uint32_t P = std::max<uint32_t>(1, (C.nSensors + C.perPond - 1) / C.perPond);
+    g_capture.assign(P, {});
     NodeContainer colNodes, stNode, beNode;
     colNodes.Create(P);
     stNode.Create(1);
@@ -1200,6 +1237,13 @@ main(int argc, char* argv[])
             outsider.Create(1);
             inet.Install(outsider);
             pond.Add(outsider);
+        }
+        NodeContainer replayer;
+        if (C.replayRate > 0)
+        {
+            replayer.Create(1);
+            inet.Install(replayer);
+            pond.Add(replayer);
         }
         MobilityHelper mob;
         Ptr<ListPositionAllocator> pos = CreateObject<ListPositionAllocator>();
@@ -1300,6 +1344,48 @@ main(int argc, char* argv[])
                 meta.push_back(0); // bad MAC
                 auto b = MakeBuf(M_REPORT, meta, ReportSize());
                 os->SendTo(Create<Packet>(b.data(), b.size()), 0, Inet6SocketAddress(colAddr, 9000));
+                Simulator::Schedule(Seconds(ex->GetValue()), *firePtr);
+            };
+            Simulator::Schedule(Seconds(C.attackStart), *firePtr);
+        }
+        if (C.replayRate > 0)
+        { // replay attacker: re-sends byte-identical copies of honest frames it overheard (valid link MAC)
+            Ptr<Socket> rs = Socket::CreateSocket(replayer.Get(0), UdpSocketFactory::GetTypeId());
+            rs->Bind(Inet6SocketAddress(Ipv6Address::GetAny(), 0));
+            Ptr<ExponentialRandomVariable> ex = CreateObject<ExponentialRandomVariable>();
+            ex->SetAttribute("Mean", DoubleValue(1.0 / C.replayRate));
+            ex->SetStream(stream++);
+            Ptr<UniformRandomVariable> pick = CreateObject<UniformRandomVariable>();
+            pick->SetStream(stream++);
+            uint32_t pp = p;
+            auto firePtr = std::make_shared<std::function<void()>>();
+            *firePtr = [rs, colAddr, ex, pick, pp, firePtr]() {
+                double now = Simulator::Now().GetSeconds();
+                if (now > C.simTime - C.drain)
+                    return;
+                auto& cq = g_capture[pp];
+                if (!cq.empty())
+                {
+                    uint32_t wmax = 0;
+                    for (auto& e : cq) wmax = std::max(wmax, e.second.window);
+                    bool old = pick->GetValue(0, 1) < C.replayOldFrac;
+                    std::vector<size_t> cand;
+                    for (size_t i = 0; i < cq.size(); ++i)
+                        if (old ? cq[i].second.window < wmax : cq[i].second.window == wmax)
+                            cand.push_back(i);
+                    if (!cand.empty())
+                    {
+                        Rec r = cq[cand[(size_t)pick->GetInteger(0, cand.size() - 1)]].second;
+                        r.replay = 1;
+                        std::vector<uint8_t> meta;
+                        Put(meta, r);
+                        meta.push_back(1); // byte-identical copy: link MAC valid
+                        auto b = MakeBuf(M_REPORT, meta, ReportSize());
+                        rs->SendTo(Create<Packet>(b.data(), b.size()), 0, Inet6SocketAddress(colAddr, 9000));
+                        if (now >= C.warmup)
+                            S.rpSent++;
+                    }
+                }
                 Simulator::Schedule(Seconds(ex->GetValue()), *firePtr);
             };
             Simulator::Schedule(Seconds(C.attackStart), *firePtr);
@@ -1469,7 +1555,7 @@ main(int argc, char* argv[])
              "macTxDrop,energyPerReport_mJ,energyTx_mJ,energyRx_mJ,energyCpu_mJ,colCpuUtil,colCpuUtilMax,"
              "meanBatch,testsPerVerified,hecmPerVerified,stHecmPerRep,beHecmPerRep,macDrop,windowDrop,"
              "replayDrop,quotaDrop,negDrop,revokedDrop,sigDrop,attackCommitted,firstInvalid,revIssue,"
-             "revPropagation,detectToMitigate,rlBytes,windowMissFrac,falseRevoked,noticesRejected,noticesReceived,evidence,byzNoticeRate,sharedChannel,pondSpacing,tHecmSensor,tHecmCol,beaconStagger\n";
+             "revPropagation,detectToMitigate,rlBytes,windowMissFrac,falseRevoked,noticesRejected,noticesReceived,evidence,byzNoticeRate,sharedChannel,pondSpacing,tHecmSensor,tHecmCol,beaconStagger,replayRate,replayOldFrac,rpSent,rpDropMacWin,rpDropCache,rpDropQuota,rpVerified,rpDupVerify,rpBeDup,rpBenign,rpDropPending,dupPendingHonest\n";
     double e2eMean = S.e2e.empty() ? NAN : std::accumulate(S.e2e.begin(), S.e2e.end(), 0.0) / S.e2e.size();
     double var = 0;
     for (double x : S.e2e)
@@ -1497,7 +1583,7 @@ main(int argc, char* argv[])
       << S.attackCommitted << "," << S.firstInvalid << "," << S.revIssue << "," << revProp << "," << detMit << ","
       << S.rlBytes << "," << (S.sensorWindows ? double(S.sensorWindowsMissed) / S.sensorWindows : NAN) << ","
       << S.falseRevoked << "," << S.noticesRejected << "," << S.noticesReceived << "," << C.evidence << ","
-      << C.byzNoticeRate << "," << C.sharedChannel << "," << C.pondSpacing << "," << C.tHecmSensor << "," << C.tHecmCol << "," << C.beaconStagger << "\n";
+      << C.byzNoticeRate << "," << C.sharedChannel << "," << C.pondSpacing << "," << C.tHecmSensor << "," << C.tHecmCol << "," << C.beaconStagger << "," << C.replayRate << "," << C.replayOldFrac << "," << S.rpSent << "," << S.rpDropMacWin << "," << S.rpDropCache << "," << S.rpDropQuota << "," << S.rpVerified << "," << S.rpDupVerify << "," << S.rpBeDup << "," << S.rpBenign << "," << S.rpDropPending << "," << S.dupPendingHonest << "\n";
     Simulator::Destroy();
     return 0;
 }

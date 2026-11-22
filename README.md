@@ -1,184 +1,52 @@
 # HiBaF-Twin — reproducibility package
 
-## Latest uploaded scripts (2026-11-21)
+**Current code release:** November 2026, using the author's `last script.zip` (20 November 2026) as the source inventory. Source files are reorganized for clarity and portability. Scripts that only reproduced superseded campaigns have been removed from the active tree. Historical **experimental results** are retained but must not be mistaken for the latest 0.61 ms campaign.
 
-The newly supplied archive `last script.zip` introduces a separate 0.61 ms/HECM back-end calibration and a corrected Monte Carlo plotting script. The portable scripts and 0.61 ms figures generator are in [`campaign/backend_0p61ms/`](campaign/backend_0p61ms/README.md), and the corrected Monte Carlo figure generator is [`analytic/make_fig7_mc.py`](analytic/make_fig7_mc.py). Prior 0.10 ms source files are retained for provenance; the raw 0.61 ms simulation CSVs are still required before its results can be independently audited.
+## Source code: authoritative entry points
 
-
-
-## v33 source restoration — 2026-11-20
-
-The exact v33 simulator and original 36-check reference-model suite have been restored from the author's `03_reproducibility_package` archive. Each of the five recovered files was checked against its Git blob hash in the archive. The 36/36 transcript is the archived execution from 2026-10-29, not a new execution.
-
-- Main campaign: compile `ns3/hibaf-sim_v33.cc` as `scratch/hibaf/hibaf-sim.cc` before using `campaign/campaign_hw_all.py` and `campaign/campaign_hw3_beaconfix.py`.
-- Sensitivity checks: use `ns3/hibaf-sim_sensitivity.cc` instead. This is the v33 simulator with the additional `--indTheta` option.
-- Original v33 tests: `python reference_model/v33/test_hibaf_v2.py` (36 checks). The top-level reference-model files remain historical/alternate regression fixtures; do not add their counts to the v33 suite.
-- Reproduction scripts now present: `campaign/analyze_hwall.py`, `campaign/analyze_pi_beaconfix.py`, `campaign/campaign_replay.py`, `campaign/analyze_replay.py`, `analytic/adversarial/adv_controller.py`, `analytic/adversarial/fig_adv.py`, `analytic/mc_alg2.py`, `results/reproduce_table_IX.py`, and `results/verify_run_inventory.py`.
-
-**Data still required:** the exact per-run CSVs `results/tables/all_runs_hwall.csv` and `results/tables/all_runs_hwPi_beaconfix.csv` exist in the author's archive but have not yet been transferred to this repository. The archived raw sensitivity summaries (480 additional runs) and physical AES-GCM timing logs are still required. Current figure and energy scripts also need evidence-level verification against the manuscript. No missing data have been synthesized.
-
-## Current manuscript (v33) — provenance and status (November 2026)
-
-**Do not confuse the historical 3,510-run baseline with the 3,000-run main campaign of the revised manuscript.**
-
-| Evidence | Current manuscript | Repository status |
+| Topic | Active source | What it validates |
 |---|---|---|
-| Main ns-3 campaign | 3,000 distinct runs = 100 configurations x 30 seeds: 2,670 recalibrated runs (89 configurations) plus 330 A2/E runs (11 configurations) | The two source CSVs in the author's v33 archive (`all_runs_hwall.csv` and `all_runs_hwPi_beaconfix.csv`) are **not yet committed to this GitHub branch**. The 180 overlapping A runs in the second file are counted once. |
-| Earlier calibration | 3,510 original runs, with an additional historical revision archive | Archived under `results/tables/all_runs.csv` and `all_runs_rev.csv`; **not** the source of the revised manuscript's main results |
-| Device timings | ESP32 102.666 ms; Raspberry Pi 4 1.706 ms per scalar multiplication | Raw device logs are in `hardware_harness/results/` |
-| Reference-model checks | 36 checks | Original v33 `reference_model/v33/test_hibaf_v2.py` and its archived 36/36 execution transcript are now included; the older root-level suite is retained separately |
-| New sensitivity analysis | 480 additional seed-level runs (A2/E back-end 0.86 and 1.19 ms/HECM, B1 audit rate 0.25) | `results/sensitivity/sensitivity_results.txt` contains supplied 30-seed aggregate statistics; the per-seed sensitivity `summary.csv` files are **not yet committed**. These 480 runs are **not included** in the 3,000-run main count. |
+| Reference protocol | [`reference_model/`](reference_model/) | 36 executable correctness and attack checks; toy genus-2 Jacobian with real AES-GCM |
+| Main simulator | [`ns3/hibaf-sim.cc`](ns3/hibaf-sim.cc) | Corrected ns-3.49 protocol and attacks (same bytes as `5_ns3_simulator/hibaf-sim.cc` in the supplied ZIP) |
+| Main hardware-calibrated campaign | [`campaign/backend_0p61ms/`](campaign/backend_0p61ms/) | 0.61 ms/HECM back-end, 102.666 ms ESP32, 1.706 ms Pi 4 |
+| Additional sensitivity model | [`ns3/hibaf-sim_sensitivity.cc`](ns3/hibaf-sim_sensitivity.cc) | Supplementary `--indTheta` experiment; **not** the main simulator |
+| Monte Carlo / adversarial controller | [`analytic/`](analytic/) | Batch-cost, replay, adaptive-controller and adversarial scenarios |
+| Cryptographic curve / proof | [`crypto_level1/`](crypto_level1/), [`curve/`](curve/), [`tamarin/`](tamarin/) | Curve arithmetic, group order certificates, Tamarin models/proof transcripts |
+| Hardware benchmark code | [`hardware_harness/`](hardware_harness/) | ESP32 and Raspberry Pi C implementations and measured timing logs |
 
-The reproducibility statement is therefore **partial** until both current-campaign CSVs and the raw sensitivity summaries are uploaded. The historical dataset remains intact, and no simulation outputs have been regenerated by this repository update.
+**Important code-vs-data boundary:** This archive contains the *scripts* for the revised **3,000 distinct ns-3 simulations** but **not** the underlying 0.61 ms raw CSVs: `all_runs_hwall_0p61.csv` (2,670 rows), `all_runs_hwPi_beaconfix_0p61.csv` (510 rows; 180 A overlaps), and `config_means_old_vs_new.csv`. Until these are supplied, that numerical campaign cannot be independently recomputed from the archived GitHub data. The original 0.10 ms and 3,510-run CSVs in `results/tables/` are historical, not current. Additional per-seed sensitivity runs and AES-GCM physical timing output are also not all published.
 
-The source used for the new sensitivity experiments is `ns3/hibaf-sim_sensitivity.cc` (with the optional `--indTheta` parameter). It is separate from the original `ns3/hibaf-sim.cc` to preserve historical code and avoid silently changing existing simulations. See [sensitivity documentation](results/sensitivity/README.md).
+## Reproduce what is available
 
-The repository distinguishes executable source, archived results, symbolic evidence and hardware measurements. Not every script is re-executed during documentation updates.
-
-| Folder | Content | Evidence type |
-|---|---|---|
-| `ns3/hibaf-sim.cc` | ns-3.49 simulator of the full protocol (802.15.4/6LoWPAN ponds, CSMA LAN, P2P WAN, TCP, beacons, caches, quota, MSM controller, revocation) | simulated |
-| `campaign/campaign.py` | historical scenarios A–F, 30 RNG runs per configuration (3,510 original-calibration runs) | simulated |
-| `campaign/analyze.py` | Merge, mean/SD/95% CI, Welch t-test, Hedges' g, figures | — |
-| `results/tables/all_runs.csv` | Historical original-calibration run archive; not the revised v33 paper's run inventory | simulated |
-| `results/tables/*.csv` | Per-scenario summaries and `significance.csv` | simulated |
-| `results/figures/` | Figs. 6–12 (PNG + PDF) | simulated |
-| `crypto_level1/` | Genus-2 Cantor arithmetic over F_(2^127−1), wNAF, Straus, Pippenger; `bench_g2_127_calibration.json` (ratios used in ns-3); `bench_repeat.json` (3 repeats); operation-count and isolation-strategy models; the fixed version of the original Monte Carlo script | measured (ratios) / analytical |
-| `curve/` | **Certified curve** y² = x⁵ + 8 over F_p, p = 2¹²⁷ − 2437; prime order q (254 bits). `find_curve.py` (CM search), `validate_curve.py` (order certificate, embedding degree, rho bits, twists, generator), `real_curve_test.py` (Schnorr, MSM batch, 64-byte canonical encoding on the real curve), 5-repeat benchmark on this curve | certified / executable / measured |
-| `reference_model/` | Executable HiBaF v2 on a prime-order toy Jacobian, with real AES-128-GCM and BLAKE2s; `test_hibaf_v2.py` passes archived 35/35 checks; `test_deferred_ad.py` adds the 36th independent regression check | executable |
-| `tamarin/` | Tamarin 1.10.0 models and proof logs: enrolment (unbounded), core (unbounded and 3-epoch), forward secrecy (3-epoch; unbounded attempt) | symbolic |
-
-## Reproduce
-
-For reference-model claims in the current manuscript run both `python reference_model/test_hibaf_v2.py` and `python reference_model/test_deferred_ad.py` (35 + 1 checks). For the supplementary ns-3 sensitivity campaign see `results/sensitivity/README.md`.
+Python 3.10+ and `cryptography` are required for the reference model:
 
 ```bash
-# ns-3
-git clone --depth 1 --branch ns-3.49 https://github.com/nsnam/ns-3-dev-git ns-3.49
-mkdir -p ns-3.49/scratch/hibaf && cp ns3/hibaf-sim.cc ns-3.49/scratch/hibaf/
-cd ns-3.49 && ./ns3 configure --build-profile=optimized \
-  --enable-modules="lr-wpan;sixlowpan;internet;csma;point-to-point;applications;energy" \
-  --disable-examples --disable-tests --disable-python && ./ns3 build hibaf-sim
-# single run
-./build/scratch/hibaf/ns3.49-hibaf-sim-optimized --variant=msm --nSensors=100 --out=/tmp/r
-# Return to the repository root before starting the campaign:
-cd ..
-# Campaign defaults: binary under ns-3.49/build/..., run summaries under runs/.
-# Override with HIBAF_NS3_BIN and HIBAF_RUNS_DIR when needed.
-python3 campaign/campaign.py 2 && python3 campaign/analyze.py
-
-# Level 1 and reference model (Python 3, numpy, pandas, matplotlib, scipy, cryptography)
-python3 crypto_level1/bench_g2_127.py
-python3 crypto_level1/check_equations.py
-cd reference_model && python3 test_hibaf_v2.py
-
-# Tamarin 1.10.0 + Maude 3.5
-tamarin-prover --prove tamarin/hibaf_v2_enrol.spthy
-tamarin-prover --prove tamarin/hibaf_v2_core3.spthy
-tamarin-prover --prove tamarin/hibaf_v2_fsmin3.spthy
-tamarin-prover --prove tamarin/hibaf_v3_fs_grace.spthy
+python -m pip install cryptography numpy pandas scipy matplotlib
+python reference_model/test_hibaf_v2.py
+python campaign/verify_latest_campaign.py
 ```
 
-## Calibration and limitations (also stated in the paper)
+The reference model should finish with **36/36 checks passed**. The campaign-grid verifier checks 2,670 + 510 jobs and the 0.61 ms/HECM cost without running ns-3.
 
-- Cryptography is a calibrated CPU delay in ns-3, not executed. The scalar-multiplication times are the authors' earlier values (ESP32 28.62 ms, RPi4 4.20 ms). The back-end value (0.10 ms) is an assumption. MSM and individual-verification costs are measured *ratios* (`bench_g2_127_calibration.json`). To recalibrate, change `tHecm*` on the command line, or the `MSM_PTS` table in `hibaf-sim.cc`, and rerun the campaign.
-- The ns-3 calibration ratios were measured on a random curve under CPU contention. Repeated on the certified curve with the CPU idle (`curve/bench_certified_curve_summary.json`), MSM costs 0.25–0.28 HECM per report for n ≥ 50, versus 0.32–0.34 in the calibration, so the simulated MSM gains are conservative.
-- Reproduce the curve: `python3 curve/find_curve.py && python3 curve/validate_curve.py && python3 curve/real_curve_test.py` (needs sympy).
-- The shipped `01_adversarial_bisection.py` of the previous package omitted the cost of failed parent tests. `crypto_level1/01_adversarial_bisection_FIXED.py` reproduces the earlier manuscript's Fig. 5 exactly.
-
-## Revision after external review (2026-10-15)
-
-| Path | What | Status |
-|---|---|---|
-| `curve/cert/` | Deterministic proof that #J = q: ECPP certificates for q and p (PARI/GP `primecert`, Primo format), qL = O, exact Hasse–Weil check. `python3 certify_order.py` | proved |
-| `tamarin/hibaf_v3_enrol.spthy` | Three-message (SIGMA-I style) enrolment with key confirmation; 5 lemmas verified, unbounded (`v3_enrol.log`) | symbolic |
-| `tamarin/hibaf_v3_fs_grace.spthy` | Three-epoch ratchet with the back end's grace-period retention of the last window's keys: forward secrecy with the grace exception, other windows secret, secret after the grace period, and reachability of the grace exposure; 4 lemmas verified (`fs_grace.log`) | symbolic |
-| `tamarin/hibaf_v2_enrol_flaw.spthy` | Old two-message enrolment: Tamarin falsifies "BE installs only keys the sensor derived" (replayed message 1 overwrites the key) | symbolic (attack) |
-| `reference_model/` | Updated model (3-message enrolment, evidence-based revocation); 35/35 checks (`test_output.txt`) | executable |
-| `platform/` | Portable C implementation (`g2.c`, `bench.c`) of the certified curve; ESP32 run under Espressif QEMU (`esp32_run.txt`, CCOUNT with `-icount shift=5`, 1.28 ticks/instruction); Cortex-A72 build under QEMU 9.2.2 with insn/hotblocks plugins (`a72_run.txt`) and llvm-mca cycle model (`a72_mca.py`); summary `platform_estimates.json` | **emulated estimates, not hardware measurements** |
-| `ns3/hibaf-sim.cc` | Adds `--evidence` (revocation on back-end-validated evidence, default 1), `--byzNoticeRate`, `--sharedChannel`, `--pondSpacing`, `--beaconStagger` | simulated |
-| `campaign/campaign_rev.py`, `analyze_rev.py` | 1,800 runs: Dev (scenario D with evidence), Dz (Byzantine collector), G (shared channel), H_* (recalibration with emulated platform costs) | simulated |
-| `results/tables/all_runs_rev.csv` | One row per revision run | simulated |
-
-Build the platform benchmarks:
-```bash
-gcc -O2 bench.c -o bench64 && ./bench64 selftest
-aarch64-linux-gnu-gcc -O2 -static -mcpu=cortex-a72 bench.c -o bench_a72   # run under qemu-aarch64 with libinsn.so
-xtensa-esp32-elf-gcc -O2 -DESP_ALL -DBKBITS=6 -specs=sim.elf.specs -specs=sys.qemu.specs -Wl,--defsym=entire_dram_seg=1 bench.c -o bench_esp32.elf
-qemu-system-xtensa -M esp32 -nographic -semihosting -kernel bench_esp32.elf -icount shift=5
-```
-The old scenario D results (revocation on the collector's notice alone) remain in `results/tables/all_runs.csv` (tag D) for comparison; the paper uses tag Dev.
-
-## Restructured version (v3): analytical and Monte Carlo evaluation
-
-| Path | What | Status |
-|---|---|---|
-| `analytic/eval_analytic.py` | Monte Carlo (seed 20260603, 10 000 windows): mixed validity (individual, Base + bisection, MSM + bisection, HiBaF-MSM controller) and replay filtering vs. B4; Base reproduces the earlier manuscript exactly | Monte Carlo |
-| `analytic/eval_analytic2.py` | Figures, scalability (back-end admissible T_HECM, workers, site critical path) and energy (E = P·T) | analytical |
-| `analytic/eval_tables_v3.py` | Operation-count, scheme-comparison, B2/B3 and energy tables | analytical |
-| `hardware_harness/` | Raspberry Pi C sources and native runner (`raspberry_pi/`), ESP-IDF source and prebuilt firmware (`esp32_idf/`), and raw measurement logs (`results/`); original harness ZIP also retained | to be run on hardware |
-
-## Recheck (2026-10-15, evening)
-- `H2` (challenge hash to Z_q) is BLAKE2b-512 reduced mod q in the reference model and the real-curve test (a 256-bit hash reduced mod q ≈ 2^254 is at statistical distance ≈ 2^-62.7 from uniform). All 35 reference-model checks and the real-curve test pass.
-- Monte Carlo controller candidates are the powers of two b ∈ {2,…,256} with g ∈ {1,2,4,8,16} (40 candidates), identical to Algorithm 3 and the ns-3 controller.
-- `analytic/be_sens.py`: 60 runs of scenario A (500 sensors) with the measured x86 back-end cost (1.19 ms per scalar multiplication).
-- `analytic/analyze_fig.py`: regenerates the ns-3 figures from the archived `all_runs_original_3510.csv` with generic axis labels (summary tables are byte-identical to the originals).
-
-
-## ESP32 hardware measurement (October 2026)
-
-- `hardware_harness/results/esp32_results.txt`: raw serial output of `hw_bench.c` on an ESP32-D0WD-V3 (rev. 3.0) at 240 MHz, ESP-IDF v5.4.1, `esp_timer`, 7 repetitions; self-test PASS. One 254-bit scalar multiplication: 102.666 ms median (101.778-103.476). **Hardware measurement.**
-- `campaign/campaign_hw.py`, `campaign/analyze_hw.py`, `results/rev_H_hw.csv`: ns-3 recalibration (scenarios A, A2, E; 1,020 runs) with the measured ESP32 cost at the sensors and the emulated Cortex-A72 range (1.12 / 2.78 ms) at collectors and station.
-
-## Raspberry Pi 4 hardware measurement (October 2026)
-
-- `hardware_harness/results/pi_results.csv`: `run_pi.sh` output on a Raspberry Pi 4 Model B Rev 1.5 (1.8 GHz, performance governor, no throttling, 50-52 C, Linux 6.18.50, gcc 14.2.0); self-test PASS. One 254-bit scalar multiplication: 1.706 ms median (1.690-1.720). **Hardware measurement.**
-- `campaign/campaign_hw2.py`, `campaign/analyze_pi.py`, `results/rev_H_pi.csv`: final ns-3 recalibration (scenarios A, A2, E; 510 runs) with both measured costs (ESP32 102.666 ms, Pi 4 1.706 ms). The earlier runs with emulated Cortex-A72 costs (`rev_H_hw.csv`) are kept for comparison.
-
-## Browsable ESP32 and Raspberry Pi source
-
-The hardware-harness ZIP is also unpacked in this repository for direct inspection:
-
-- **Raspberry Pi 4:** `hardware_harness/raspberry_pi/hw_bench.c`, `g2.c`, `run_pi.sh`. The script builds with GCC and records native measurements on the board.
-- **ESP32:** `hardware_harness/esp32_idf/main/hw_bench.c`, `g2.c`, `main.c`, ESP-IDF CMake files and `sdkconfig.defaults`. Requires ESP-IDF 5.4.1 to rebuild, using `idf.py set-target esp32 build`.
-- **Optional prebuilt firmware:** `hardware_harness/esp32_idf/prebuilt/`.
-- **Original measurement data:** `hardware_harness/results/`. `QEMU_SMOKE_TEST_NOT_HARDWARE.log` is an emulator check, **not a hardware timing measurement**.
-
-The reference model includes the pending-duplicate regression check: `python reference_model/test_hibaf_v2.py` (requires the Python `cryptography` package), expected `35/35 checks passed`.
-
-## Portable ns-3 campaigns and curve verification
-
-The campaign scripts discover the ns-3.49 executable in `ns-3.49/build/scratch/hibaf/`
-relative to the repository root and write raw run summaries under `runs/`.
-Use `HIBAF_NS3_BIN` for a custom executable, and `HIBAF_RUNS_DIR`
-to choose an alternative location for the run directories. The same run directory
-is used by `campaign/analyze.py`, `analyze_rev.py`, `analyze_hw.py`
-and `analyze_pi.py`. Python dependencies include `numpy`, `pandas`,
-`matplotlib` and `scipy`; compiling ns-3.49 also requires the relevant
-ns-3 toolchain and modules.
+For the ns-3 main experiment, compile ns-3.49 with `ns3/hibaf-sim.cc` copied into `scratch/hibaf/hibaf-sim.cc`. Then from the repo root:
 
 ```bash
-python3 curve/validate_curve.py
-python3 curve/real_curve_test.py
-python3 curve/cert/certify_order.py  # also requires PARI/GP executable 'gp'
+python campaign/backend_0p61ms/campaign_hw_all.py 2
+python campaign/backend_0p61ms/campaign_hw3_beaconfix.py 2
 ```
 
-The curve checks use the included Jacobian model and JSON files, with paths
-resolved from the scripts rather than the working directory.
+The argument `2` is the worker count, not a cryptographic parameter. Configure `HIBAF_NS3_BIN` if your compiled executable is elsewhere. Configure `HIBAF_RUNS_DIR` for reproducible per-run output, taking care **not** to mix different calibrations. See [campaign instructions](campaign/README.md).
 
-For Cortex-A72 QEMU measurements, first build `platform/bench_a72`
-and supply the separately built QEMU plugins. See
-[platform/README.md](platform/README.md) for the required environment variables.
-Emulated estimates are not hardware measurements.
+The current Monte Carlo figure (with the correct **"vs. B2"** label) can be generated by `python analytic/make_fig7_mc.py`; the optional latest back-end figure generator is `campaign/backend_0p61ms/make_figures_0p61.py` and requires the missing 0.61 ms CSV.
 
-## Portable analytical evaluation
+## Evidence limitations
 
-The analytical scripts now locate inputs relative to this repository rather than using developer-specific absolute paths. See [analytic/README.md](analytic/README.md) for dependencies, commands, generated outputs and evidence boundaries.
+- `ns3/hibaf-sim.cc` simulates cryptographic operations using calibrated CPU delays; it does not execute real cryptography inside ns-3.
+- The ESP32/Raspberry Pi C hardware programs primarily benchmark cryptographic primitives, not a full deployed end-to-end IoT product. The ESP32 GitHub harness additionally includes an AES-GCM microbenchmark not contained in the author's latest curated ZIP; this non-regressing addition is intentionally retained.
+- The energy values are modeled using measured operation times and nominal powers; electrical power has not been measured.
+- Tamarin results cover different properties with different bounds, including a bounded epoch analysis. Do not equate all model logs with unbounded proofs.
+- The 0.61 ms back-end calibration is described as a measured best-of-nine in the supplied material, but the nine underlying raw timing samples have not yet been published.
 
-## Reviewer quick start (cross-platform, non-destructive)
+## Repository organization
 
-Clone the repository and enter its root. For Python verification use Python 3.10+ and install `cryptography`, `sympy`, `numpy`, `pandas`, `scipy` and `matplotlib` in a virtual environment. Linux / WSL: `python3 -m venv .venv && . .venv/bin/activate && python -m pip install cryptography sympy numpy pandas scipy matplotlib`. Windows PowerShell: `py -3 -m venv .venv; .\\.venv\\Scripts\\Activate.ps1; python -m pip install cryptography sympy numpy pandas scipy matplotlib`.
-
-To verify the **35 archived reference-model checks plus the new deferred-AD check** without regenerating any experimental dataset, run `python reference_model/test_hibaf_v2.py` from the repository root. This suite is also configured in GitHub Actions on both Ubuntu and Windows. The checked-in `reference_model/test_output.txt` is an **archived** test transcript, not evidence of a fresh test execution. The expensive curve validations, simulation campaigns, and physical-device benchmarks are separate procedures; see [curve/README.md](curve/README.md), [campaign/README.md](campaign/README.md), [platform/README.md](platform/README.md), and [hardware_harness/README.md](hardware_harness/README.md).
-
-**Evidence provenance:** `results/tables/` and `results/figures/` contain archived ns-3 simulation outcomes; `platform/` outputs are emulator-based estimates; `hardware_harness/results/` contains actual Raspberry Pi 4 and ESP32 measurement logs; `tamarin/` contains symbolic models and archived verification logs; `reference_model/` is executable correctness/security regression testing. Running the lightweight Python suite does **not** independently reproduce hardware timings, ns-3 results, or Tamarin proofs. No external source, compiler, plugin, simulator, or measurement setup is implicitly supplied by this repository.
+Archived summary tables, figures, certificates, and proof logs remain available for traceability. The `campaign/campaign_common.py` runner supports supplementary historical comparisons; the **only** active main-calibration launchers are under `campaign/backend_0p61ms/`. Superseded 0.10 ms `campaign_hw*.py` launchers, the old 35-check reference suite, duplicate v33 sources, and the original 3,510-run plotting script have been removed from the active tree. No simulation outputs were manufactured by this cleanup.

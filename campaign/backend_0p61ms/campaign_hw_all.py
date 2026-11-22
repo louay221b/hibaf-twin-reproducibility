@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Hardware-calibrated re-run of every ns-3 scenario the paper reports with the original calibration.
+"""Hardware-calibrated 0.61 ms/HECM back-end re-run of the paper's ns-3 scenarios.
 Same scenarios, variants, seeds and parameters as campaign.py / campaign_rev.py / campaign_replay.py / be_sens.py;
-only the cryptographic delays change: measured ESP32 102.666 ms and Raspberry Pi 4 1.706 ms per HECM (back end 0.10 ms,
-as in Table IX). Simulator: corrected hibaf-sim.cc with the beacon fix. Output: runs_hwall/ (tags prefixed HW_)."""
+Measured ESP32 102.666 ms and Raspberry Pi 4 1.706 ms per HECM; the back-end default is 0.61 ms/HECM,
+with the dedicated 1.19 ms BEsens case overriding this default. Simulator: corrected hibaf-sim.cc with the beacon fix. Output: runs_hwall/ (tags prefixed HW_)."""
 import itertools, os, sys, time
 from pathlib import Path
 from multiprocessing import Pool

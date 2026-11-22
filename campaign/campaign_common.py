@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""HiBaF v2 ns-3 campaign runner: scenarios A-F, 30 independent RNG runs per configuration.
+"""Shared auxiliary ns-3 runner for historical 0.10 ms sensitivity/replay configurations: scenarios A-F, 30 independent RNG runs per configuration.
 Each run writes its own summary.csv under runs/<job>/; analyze.py consolidates them."""
 import itertools, os, subprocess, sys, json, time
 from multiprocessing import Pool
@@ -14,7 +14,7 @@ _NS3_CANDIDATES = [
     for suffix in ("", ".exe")
 ]
 BIN = os.environ.get("HIBAF_NS3_BIN") or str(next((p for p in _NS3_CANDIDATES if p.is_file()), _NS3_CANDIDATES[0]))
-OUT = os.environ.get("HIBAF_RUNS_DIR", str(ROOT / "runs"))
+OUT = os.environ.get("HIBAF_RUNS_DIR", str(ROOT / "runs_auxiliary_0p10ms"))
 SEEDS = range(1, 31)
 
 def jobs():

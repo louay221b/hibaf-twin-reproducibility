@@ -5,7 +5,7 @@ replayRate frames/s per area. Same topology, parameters, seeds and calibration a
 one report per 10 s). 30 RNG runs per configuration. For final hardware-calibrated R use campaign_hw_all.py."""
 import sys, time, itertools
 from multiprocessing import Pool
-import campaign as C0
+import campaign_common as C0
 def jobs():
     J = []
     for rr, v, r in itertools.product([0, 1, 5, 10, 20], ["msm", "ind", "base"], C0.SEEDS):

@@ -32,6 +32,7 @@ PASS enrolment rate limit: a second new message 1 from one identity in the same 
 PASS eager ratchet: a silent sensor's back-end state is at the current epoch; its earlier epochs are erased
 PASS idle sensor without beacons keeps its stored epoch; on the next beacon it ratchets to the back end's state
 PASS grace retention at an epoch boundary: |T| = 2 window keys per sensor, all for the old epoch's last window
-PASS exact copies pending dropped before quota and MSM; same-nonce variant still gives evidence
+PASS pending duplicates: 5 exact copies dropped before quota/verification; a different report with the same nonce still yields equivocation evidence
+PASS deferred AD: one 128-bit tag per 96-bit nonce, both calls give the same ciphertext, only the final tag is released (the preliminary tag is absent and does not verify); a failure between the calls retires the nonce
 
-35/35 checks passed
+36/36 checks passed

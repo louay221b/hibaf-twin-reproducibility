@@ -1,67 +1,29 @@
-# HiBaF-Twin ns-3 reproducibility campaigns
+# HiBaF-Twin ns-3 experiments — current source
 
-These scripts run against **ns-3.49**, using `ns3/hibaf-sim.cc` and the program built following the repository's main README.
+The authoritative simulator is [`../ns3/hibaf-sim.cc`](../ns3/hibaf-sim.cc) (ns-3.49). Build it into `ns-3.49/scratch/hibaf/` with the standard scratch name `hibaf-sim.cc`.
 
-## Paths
+## Current 0.61 ms/HECM main campaign
 
-By default, `campaign/campaign.py` looks for the compiled executable at
-`ns-3.49/build/scratch/hibaf/ns3.49-hibaf-sim-optimized` relative to the repository root.
-It writes run summaries to `runs/<configuration>/summary.csv`.
-
-Set the following environment variables if you use a different location:
-
-- `HIBAF_NS3_BIN`: absolute path to the compiled ns-3 program
-- `HIBAF_RUNS_DIR`: directory containing run-specific subdirectories
-
-Both are optional; the defaults work when ns-3.49 is built in the repository root as shown in the main README. Run summaries are intentionally ignored by Git because a full campaign may produce many files.
-
-## Execution
+The current code is in [`backend_0p61ms/`](backend_0p61ms/). The two launchers are:
 
 ```bash
-python3 campaign/campaign.py 2
-python3 campaign/analyze.py
-
-python3 campaign/campaign_rev.py 2
-python3 campaign/analyze_rev.py
-
-python3 campaign/campaign_hw.py 2
-python3 campaign/analyze_hw.py
-
-python3 campaign/campaign_hw2.py 2
-python3 campaign/analyze_pi.py
+python campaign/backend_0p61ms/campaign_hw_all.py 2
+python campaign/backend_0p61ms/campaign_hw3_beaconfix.py 2
 ```
 
-The integer argument is the number of worker processes; `2` is a reproducible starting configuration, not a required parameter of the protocol. Recalibration jobs reuse the original random-seed and scenario grids documented in their source.
+The grids contain 2,670 and 510 jobs respectively. There are 180 overlapping A cases, yielding **3,000 distinct runs**. The hardware-calibrated costs are ESP32=102.666 ms/HECM, Raspberry Pi 4=1.706 ms/HECM, back end=0.61 ms/HECM, except the explicitly modeled 1.19 ms/HECM BEsens cases. Verify the inputs without running ns-3 with `python campaign/verify_latest_campaign.py`.
 
-`campaign/analyze.py` generates figures and tables in `results/figures/` and `results/tables/`. Revised outputs are written to `results/tables/`; hardware recalibration summaries are written to `results/rev_H_hw.csv` and `results/rev_H_pi.csv`.
+Set `HIBAF_NS3_BIN` for a nondefault simulator binary path, and `HIBAF_RUNS_DIR` to control output. Never reuse the same output directory for runs using a different back-end HECM calibration. Existing `summary.csv` files are skipped.
 
-**Note:** the archived summary CSVs are already available in `results/`. Re-running a full ns-3 campaign can be time-consuming, and the new raw `runs/` directory must be generated before the analysis scripts can merge it.
+## Complementary experimental sources
 
-**Evidence boundaries:** ns-3 models cryptographic CPU work as calibrated delays. The emulated Cortex-A72 estimates and the hardware timings must remain distinguished as stated in the main README.
+- `campaign_rev.py`, `campaign_replay.py` — auxiliary defenses/replay campaigns from the supplied latest ZIP.
+- `campaign_sens.py`, `analyze_sens.py` — previously supplied independent audit/backend sensitivity experiments (0.10, 0.86, 1.19 ms and B1 audit-rate variations), whose baselines are **not** the current 0.61 ms campaign.
+- `campaign_common.py` — common 0.10 ms **auxiliary** runner imported by the above supplemental scripts, not an alternative main-calibration driver.
+- `analyze.py`, `analyze_hwall.py`, `analyze_pi_beaconfix.py`, `analyze_replay.py`, and related scripts — archive analysis, but require the corresponding raw summaries/CSVs before outputs can be reproduced.
 
-## Windows and Linux
+For the `--indTheta` flag compile `../ns3/hibaf-sim_sensitivity.cc` in place of the main simulator, then run the sensitivity campaign separately; do not use it to recreate the main run grid without identifying that variant.
 
-Use Python 3.10+ and install `python -m pip install numpy pandas scipy matplotlib cryptography sympy`. On Windows, substitute `py -3` for `python3`; execute from the repository root in PowerShell, or use Linux/WSL for ns-3 compilation. The runner accepts an absolute **or relative** executable path through `HIBAF_NS3_BIN`; relative values are interpreted from the current working directory. By default it detects optimized/default/debug ns-3.49 executables, with or without `.exe`, under the checkout's `ns-3.49/build/scratch/hibaf` directory. Windows hosts normally require WSL for ns-3; the Python analyses themselves are cross-platform.
+## Data provenance and remaining gaps
 
-PowerShell example (using an existing native executable, where supported):
-
-```powershell
-$env:HIBAF_NS3_BIN = "C:\\path\\to\\ns3.49-hibaf-sim-optimized.exe"
-$env:HIBAF_RUNS_DIR = ".\\runs"
-py -3 campaign/campaign.py 2
-py -3 campaign/analyze.py
-```
-
-The runners do not change any calibrated costs or seed grids. Existing `summary.csv` files are skipped; a failed ns-3 process now raises an error after preserving its stderr in `error.txt`, rather than incorrectly claiming all jobs completed. The checked-in `results/` tables are archived scientific outputs, not regenerated by this portability check.
-
-## Additional sensitivity checks (November 2026)
-
-These supplementary experiments are not part of the historical `campaign.py` run grid. The updated source is `ns3/hibaf-sim_sensitivity.cc`; copy it as `scratch/hibaf/hibaf-sim.cc` and rebuild ns-3.49 before running `python3 campaign/campaign_sens.py`. The optional `--indTheta` flag defaults to -1 so that B1 keeps the historical theta=1 unless explicitly overridden. All other simulator settings are retained. `HIBAF_NS3_BIN` and `HIBAF_RUNS_DIR` control executable and output paths. The expected job count is 480 (30 seeds each), and the script defaults to two workers. The author's aggregate sensitivity values are archived in `results/sensitivity/sensitivity_results.txt`; individual per-seed sensitivity run files are not yet in this repository.
-
-### Original advisor analysis script
-
-The original `an.py` sent with the sensitivity checks is preserved verbatim in [`campaign/an.py`](an.py). It expects raw run directories at `runs/*/summary.csv`, `/home/claude/sim/runs_beaconfix/` and `/home/claude/sim/runs_hwall/`, and is **not portable as written**. For independent reproduction, use [`analyze_sens.py`](analyze_sens.py) with the required per-seed baseline CSV and per-run sensitivity summaries. The original absolute paths are retained solely to document the analysis as supplied; neither script fabricates missing run files.
-
-## Final v33 campaign (restored source)
-
-For the corrected main experiment, build `ns3/hibaf-sim_v33.cc` under the scratch name `hibaf-sim.cc` (do not use the historical simulator). Run `python3 campaign/campaign_hw_all.py` and `python3 campaign/campaign_hw3_beaconfix.py`. The first grid has 2,670 runs and the second 510; the 180 matching A runs must not be counted twice. See `results/verify_run_inventory.py`, which requires the original two CSVs. For the updated B1 audit sensitivity checks use the separate `hibaf-sim_sensitivity.cc` source. Scripts and historical datasets remain intact. No new experiment was run by restoring these files.
+The supplied `last script.zip` contains code but omits `all_runs_hwall_0p61.csv`, `all_runs_hwPi_beaconfix_0p61.csv` and `config_means_old_vs_new.csv`. It does not contain raw per-seed summaries for the newer supplementary sensitivity checks. The older results under `results/tables/` are preserved as historical, not relabeled as current. No new simulations have been executed by this repository cleanup.

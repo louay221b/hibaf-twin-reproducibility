@@ -4,7 +4,7 @@ false accusations (Dz), shared 802.15.4 channel with/without beacon staggering (
 recalibration with emulated platform costs (H_*). 30 RNG runs per configuration."""
 import sys, time
 from multiprocessing import Pool
-import campaign as C0
+import campaign_common as C0
 import itertools
 
 # emulated platform costs (ms per 254-bit scalar multiplication), platform/platform_estimates.json

@@ -21,10 +21,7 @@ jobs:
         run: python -m pip install cryptography
       - name: Check Python syntax without running simulations
         run: python -m compileall -q analytic campaign crypto_level1 curve reference_model platform
-      - name: Run all reference-model regression checks
+      - name: Run final 36-check reference model
         run: python reference_model/test_hibaf_v2.py
-      - name: Check deferred AES-GCM associated data and nonce retirement
-        run: python reference_model/test_deferred_ad.py
-
-      - name: Run original v33 suite (36 checks)
-        run: python reference_model/v33/test_hibaf_v2.py
+      - name: Check latest experiment configuration grids
+        run: python campaign/verify_latest_campaign.py

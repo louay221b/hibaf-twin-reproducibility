@@ -5,7 +5,7 @@ S1: back-end cost tHecmBe in {1.19, 0.86} ms for A2 and E(10 attackers), variant
 S2: B1 (ind) audit rate theta=0.25 for A (100,500 sensors), A2, E(10 attackers)."""
 import sys, time, itertools, os
 from multiprocessing import Pool
-import campaign as C0
+import campaign_common as C0
 HW = dict(tHecmSensor=102.666, tHecmCol=1.706, tHecmSt=1.706)
 A2 = dict(nSensors=100, reportInterval=0.25, simTime=70, warmup=20, drain=10)
 E10 = dict(nSensors=100, reportInterval=0.5, attackRate=2, defenses=0, attackStart=20, warmup=20, drain=10, simTime=70, attackers=10)

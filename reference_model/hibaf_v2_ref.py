@@ -280,8 +280,7 @@ class Collector:
         self.w, self.rho, self.rl = w, rho, rl
         self.accepted, self.neg, self.count = {}, set(), {}
     def process(self, reports):
-        cand = []
-        pending_fingerprints = set()
+        cand = []; pending = set()                                       # byte-identical copies awaiting verification
         for rep in reports:
             body, mac = rep[:8], rep[8]
             ID, w, t, tau, nu, CT, Ub, s = body
@@ -290,12 +289,9 @@ class Collector:
                 self.stats["mac_drop"] += 1; continue                     # zero group operations
             if w != self.w or ID in self.rl[2] or ID in self.neg or (ID, nu) in self.accepted:
                 self.stats["early_drop"] += 1; continue
-            if rep in pending_fingerprints:
-                self.stats["early_drop"] += 1
-                continue
-
-            pending_fingerprints.add(rep)
-
+            if rep in pending:                                                # exact copy of a pending report: no quota, no group op
+                self.stats["early_drop"] += 1; self.stats["pending_dup"] = self.stats.get("pending_dup", 0) + 1; continue
+            pending.add(rep)
             self.count[ID] = self.count.get(ID, 0) + 1
             if self.count[ID] > self.quota: self.stats["quota_drop"] += 1; continue
             try: dec_point(Ub); assert 0 <= s < Q
@@ -438,4 +434,3 @@ def revoke_with_evidence(ttp, be, rep, rho):
     if be.check_evidence(rep, rho):
         ttp.revoke(rep[0]); return True
     return False
-
