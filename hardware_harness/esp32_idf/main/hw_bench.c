@@ -72,7 +72,7 @@ static void bench_gcm_tag(void) {
 
     int rc = mbedtls_gcm_setkey(&g, MBEDTLS_CIPHER_ID_AES, key, 128);
     if (rc != 0) {
-        printf("ERROR,esp32,gcm_tag_8B_ad160,setkey,%d\\n", rc);
+        printf("ERROR,esp32,gcm_tag_8B_ad160,setkey,%d\n", rc);
         mbedtls_gcm_free(&g);
         return;
     }
@@ -89,7 +89,7 @@ static void bench_gcm_tag(void) {
         }
         int64_t t1 = esp_timer_get_time();
         if (rc != 0) {
-            printf("ERROR,esp32,gcm_tag_8B_ad160,encrypt,%d\\n", rc);
+            printf("ERROR,esp32,gcm_tag_8B_ad160,encrypt,%d\n", rc);
             mbedtls_gcm_free(&g);
             return;
         }
