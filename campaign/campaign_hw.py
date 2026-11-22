@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Recalibration with the MEASURED ESP32 cost (ESP32-D0WD-V3, 240 MHz, ESP-IDF v5.4.1, hw_bench.c,
-median of 7: 102.666 ms per 254-bit scalar multiplication; plat/hw/results/esp32_results.txt) for sensors,
+median of 7: 102.666 ms per 254-bit scalar multiplication; hardware_harness/results/esp32_results.txt) for sensors,
 and the still-EMULATED Cortex-A72 range (1.12 / 2.78 ms) for collectors and station. Same scenarios,
 variants, seeds and parameters as the H_* recalibration in campaign_rev.py."""
 import sys, time, itertools

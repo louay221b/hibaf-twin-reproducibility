@@ -13,11 +13,13 @@ jobs:
         python-version: ['3.11']
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install reference-model dependency
         run: python -m pip install cryptography
+      - name: Check Python syntax without running simulations
+        run: python -m compileall -q analytic campaign crypto_level1 curve reference_model platform
       - name: Run all reference-model regression checks
         run: python reference_model/test_hibaf_v2.py
