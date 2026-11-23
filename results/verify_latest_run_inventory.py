@@ -72,7 +72,8 @@ def main():
     assert len(m) == 80
     for row in m:
         entries = grouped[cfg(row, COMPARE)]
-        assert len(entries) == 30, ("comparison config", cfg(row, COMPARE))
+        # Some comparison rows pool multiple 30-seed configurations (e.g. HW_Dz: 60, HW_G: 90).
+        assert len(entries) >= 30 and len(entries) % 30 == 0, ("comparison config", cfg(row, COMPARE), len(entries))
         for metric in METRICS:
             observed = mean(float(x[metric]) for x in entries)
             expected = float(row[metric + "_n"])
