@@ -26,4 +26,4 @@ For the `--indTheta` flag compile `../ns3/hibaf-sim_sensitivity.cc` in place of 
 
 ## Data provenance and remaining gaps
 
-The supplied `last script.zip` contains code but omits `all_runs_hwall_0p61.csv`, `all_runs_hwPi_beaconfix_0p61.csv` and `config_means_old_vs_new.csv`. It does not contain raw per-seed summaries for the newer supplementary sensitivity checks. The older results under `results/tables/` are preserved as historical, not relabeled as current. No new simulations have been executed by this repository cleanup.
+The three 0.61 ms result tables were subsequently supplied (23 November 2026) and are now at `results/tables/all_runs_hwall_0p61.csv`, `results/tables/all_runs_hwPi_beaconfix_0p61.csv`, and `results/tables/config_means_old_vs_new.csv`. Run `python results/verify_latest_run_inventory.py` to check row counts, seed grids, numerical overlaps and the newly measured aggregate means. The 480 individual per-seed supplementary sensitivity summaries remain unavailable. Historical results under `results/tables/` have not been relabeled. No ns-3 rerun was performed for the CSV upload.

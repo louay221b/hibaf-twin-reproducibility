@@ -25,3 +25,5 @@ jobs:
         run: python reference_model/test_hibaf_v2.py
       - name: Check latest experiment configuration grids
         run: python campaign/verify_latest_campaign.py
+      - name: Validate 0.61 ms published run inventory and comparison means
+        run: python results/verify_latest_run_inventory.py
