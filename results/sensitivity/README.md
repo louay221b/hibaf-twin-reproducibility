@@ -24,10 +24,10 @@ Copy `ns3/hibaf-sim_sensitivity.cc` to `ns-3.49/scratch/hibaf/hibaf-sim.cc`, com
 
 ```bash
 python3 campaign/campaign_sens.py
-python3 campaign/analyze_sens.py --runs runs --baseline-csv results/tables/all_runs_hwPi_beaconfix.csv
+python3 campaign/analyze_sens.py --runs /path/to/your/sensitivity_runs --baseline-csv /path/to/matching_old_0p10ms_baseline.csv
 ```
 
-The analyzer requires actual per-seed run summaries and the revised campaign baseline CSV. Until those files are present, the archived aggregate text is the evidence available on this branch; the analyzer does not fabricate missing inputs. The auxiliary flag `--indTheta` affects B1 only; its default `-1` preserves the original B1 audit rate of 1.
+The analyzer requires all 480 supplementary run summaries and a **matching 0.10 ms per-seed baseline CSV**. That old baseline is deliberately not included in the cleaned current-data tree; using the available 0.61 ms main-run CSV as its baseline would be a scientific error. If those inputs cannot be provided, treat the reported aggregate text as an archived supplementary result, not a directly rerunnable experiment. Until those files are present, the archived aggregate text is the evidence available on this branch; the analyzer does not fabricate missing inputs. The auxiliary flag `--indTheta` affects B1 only; its default `-1` preserves the original B1 audit rate of 1.
 
 ## Interpretation of scenario E
 

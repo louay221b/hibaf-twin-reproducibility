@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Analyze supplementary sensitivity runs from per-run summary.csv files.
+"""Analyze supplementary 0.10 ms baseline sensitivity runs from summary.csv files.
 
-The archived paper data are not generated here. Provide the v33 baseline CSV
-explicitly. Only collected raw runs are analyzed; missing inputs raise errors.
+Provide the matching original per-seed 0.10 ms baseline CSV and supplementary raw runs
+explicitly; do not substitute the current 0.61 ms main-run CSV.
+Only collected raw runs are analyzed; missing inputs raise errors.
 """
 import argparse
 import csv
@@ -35,7 +36,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--runs", type=Path, default=Path("runs"))
     ap.add_argument("--baseline-csv", type=Path, required=True,
-                    help="Revised 30-seed baseline, all_runs_hwPi_beaconfix.csv")
+                    help="Matching earlier 0.10 ms/HECM baseline CSV (not the current 0.61 ms dataset)")
     args = ap.parse_args()
     if not args.baseline_csv.is_file():
         ap.error(f"Missing revised baseline CSV: {args.baseline_csv}")

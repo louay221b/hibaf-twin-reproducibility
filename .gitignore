@@ -15,3 +15,26 @@ platform/hb_tmp.txt
 platform/bench_a72
 platform/bench64
 platform/bench_esp32.elf
+
+# Prevent accidentally re-publishing pre-0.61ms experimental outputs
+/results/per_report/
+/results/figures/
+/results/rev_H_*.csv
+/results/tables/all_runs.csv
+/results/tables/all_runs_original_3510.csv
+/results/tables/all_runs_rev.csv
+/results/tables/A_scalability.csv
+/results/tables/A2_load.csv
+/results/tables/B1_radius.csv
+/results/tables/B2_wanloss.csv
+/results/tables/C_dtsync.csv
+/results/tables/D_security.csv
+/results/tables/E_msm_ablation.csv
+/results/tables/F_constrained.csv
+/results/tables/rev_*.csv
+/results/tables/significance.csv
+/results/generated/
+/runs_hwall_0p61ms/
+/runs_beaconfix_0p61ms/
+/runs_backend_0p61ms/
+/runs_auxiliary_0p10ms/
