@@ -1,24 +1,24 @@
 # HiBaF-Twin — reproducibility package
 
-**Current code release:** November 2026, using the author's `last script.zip` (20 November 2026) as the source inventory. Source files are reorganized for clarity and portability. Scripts that only reproduced superseded campaigns have been removed from the active tree. Historical **experimental results** are retained but must not be mistaken for the latest 0.61 ms campaign.
+**Current release (November 2026):** authoritative scripts and experimental results for the corrected HiBaF-Twin study, calibrated with ESP32 = **102.666 ms/HECM**, Raspberry Pi 4 = **1.706 ms/HECM**, and back end = **0.61 ms/HECM** (except the explicitly tested 1.19 ms BEsens case). The latest author-supplied source archive is `last script.zip` (20 November 2026); the current run CSVs were uploaded on 23 November 2026. Old 3,510-run experiments, superseded estimated-energy scripts, earlier figures and packet traces have been **removed from the active branch**, not presented as current results.
 
-## Source code: authoritative entry points
+## Main reproducibility entry points
 
-| Topic | Active source | What it validates |
+| Area | Current source / results | Purpose |
 |---|---|---|
-| Reference protocol | [`reference_model/`](reference_model/) | 36 executable correctness and attack checks; toy genus-2 Jacobian with real AES-GCM |
-| Main simulator | [`ns3/hibaf-sim.cc`](ns3/hibaf-sim.cc) | Corrected ns-3.49 protocol and attacks (same bytes as `5_ns3_simulator/hibaf-sim.cc` in the supplied ZIP) |
-| Main hardware-calibrated campaign | [`campaign/backend_0p61ms/`](campaign/backend_0p61ms/) | 0.61 ms/HECM back-end, 102.666 ms ESP32, 1.706 ms Pi 4 |
-| Additional sensitivity model | [`ns3/hibaf-sim_sensitivity.cc`](ns3/hibaf-sim_sensitivity.cc) | Supplementary `--indTheta` experiment; **not** the main simulator |
-| Monte Carlo / adversarial controller | [`analytic/`](analytic/) | Batch-cost, replay, adaptive-controller and adversarial scenarios |
-| Cryptographic curve / proof | [`crypto_level1/`](crypto_level1/), [`curve/`](curve/), [`tamarin/`](tamarin/) | Curve arithmetic, group order certificates, Tamarin models/proof transcripts |
-| Hardware benchmark code | [`hardware_harness/`](hardware_harness/) | ESP32 and Raspberry Pi C implementations and measured timing logs |
+| Protocol and 36 checks | [`reference_model/`](reference_model/) | Single current reference model, deferred GCM associated data, nonce retirement, and regression checks |
+| ns-3 simulator | [`ns3/hibaf-sim.cc`](ns3/hibaf-sim.cc) | Corrected ns-3.49 simulator; cryptographic CPU work is simulated using calibrated delays |
+| Main 0.61 ms campaigns | [`campaign/backend_0p61ms/`](campaign/backend_0p61ms/) | Original 2,670-run grid plus 510-run beacon-fix grid, 180 overlapping runs |
+| Current simulation data | [`results/tables/`](results/tables/) | 3,000 distinct per-seed runs; 100 configurations × 30 seeds |
+| Simulation integrity check | [`results/verify_latest_run_inventory.py`](results/verify_latest_run_inventory.py) | Checks overlapping runs, seed completeness, and 80 current configuration means |
+| Monte Carlo and controller attacks | [`analytic/`](analytic/) | Current Monte Carlo, replay, adaptive-controller and adversarial checks |
+| Cryptography and curve | [`crypto_level1/`](crypto_level1/), [`curve/`](curve/) | Arithmetic, order certificates and MSM calibration |
+| Symbolic security | [`tamarin/`](tamarin/) | Current formal models and negative-example models used to explain design fixes |
+| Hardware measurements | [`hardware_harness/`](hardware_harness/), [`platform/`](platform/) | ESP32 and Raspberry Pi implementation and benchmark evidence |
 
-**Current 0.61 ms simulation results (published 2026-11-23):** [all_runs_hwall_0p61.csv](results/tables/all_runs_hwall_0p61.csv) contains 2,670 seed-level rows (89 configurations); [all_runs_hwPi_beaconfix_0p61.csv](results/tables/all_runs_hwPi_beaconfix_0p61.csv) contains 510 rows (17 configurations). The 180 A rows overlap and match numerically: **3,000 distinct runs, 100 configurations, 30 seeds each**. [config_means_old_vs_new.csv](results/tables/config_means_old_vs_new.csv) provides 80 old-versus-new configuration comparisons; its new-calibration means were checked against the published per-run CSVs. Verify using `python results/verify_latest_run_inventory.py`. The archived original 3,510-run CSVs are **historical**, not the main 0.61 ms results. The exact old-calibration source for the `_o` columns, individual per-seed summaries for the additional 480 sensitivity runs, the original nine back-end timing measurements, and the latest physical AES-GCM timing log have not all been published.
+### Validate the published results
 
-## Reproduce what is available
-
-Python 3.10+ and `cryptography` are required for the reference model:
+From the repository root, with Python 3.10+:
 
 ```bash
 python -m pip install cryptography numpy pandas scipy matplotlib
@@ -27,27 +27,28 @@ python campaign/verify_latest_campaign.py
 python results/verify_latest_run_inventory.py
 ```
 
-The reference model should finish with **36/36 checks passed**. The campaign-grid verifier checks 2,670 + 510 configured jobs and the 0.61 ms/HECM cost without running ns-3. The inventory verifier independently checks the published 3,180 CSV rows, 180 numerical overlaps, the 100 configurations and the 80 new-calibration summary means.
+Expected: **36/36** executable reference checks; 2,670+510 campaign jobs; **3,000 distinct run records** (2,670+510−180). The inventory validator also checks that the 80 new-calibration means in `config_means_old_vs_new.csv` agree with the per-seed data. The old-calibration `_o` means in that comparison CSV have not been independently revalidated.
 
-For the ns-3 main experiment, compile ns-3.49 with `ns3/hibaf-sim.cc` copied into `scratch/hibaf/hibaf-sim.cc`. Then from the repo root:
+### Rerun the current ns-3 campaign
+
+Build ns-3.49 using `ns3/hibaf-sim.cc` as `scratch/hibaf/hibaf-sim.cc`. Then:
 
 ```bash
 python campaign/backend_0p61ms/campaign_hw_all.py 2
 python campaign/backend_0p61ms/campaign_hw3_beaconfix.py 2
 ```
 
-The argument `2` is the worker count, not a cryptographic parameter. Configure `HIBAF_NS3_BIN` if your compiled executable is elsewhere. Configure `HIBAF_RUNS_DIR` for reproducible per-run output, taking care **not** to mix different calibrations. See [campaign instructions](campaign/README.md).
+Set `HIBAF_NS3_BIN` to the compiled executable path when needed. Do not mix results from different back-end calibrations in one output directory. Both launchers enumerate 30 independent RNG seeds per configuration. See [campaign documentation](campaign/README.md).
 
-The current Monte Carlo figure (with the correct **"vs. B2"** label) can be generated by `python analytic/make_fig7_mc.py`; the latest back-end figure generator is `campaign/backend_0p61ms/make_figures_0p61.py` and now accepts the published `results/tables/all_runs_hwall_0p61.csv`.
+To reproduce the current Monte Carlo figure with the corrected **"vs. B2"** label, run `python analytic/make_fig7_mc.py`. To generate the current 0.61-ms scalability and related figures, run `python campaign/backend_0p61ms/make_figures_0p61.py`.
 
-## Evidence limitations
+## Scope and outstanding evidence
 
-- `ns3/hibaf-sim.cc` simulates cryptographic operations using calibrated CPU delays; it does not execute real cryptography inside ns-3.
-- The ESP32/Raspberry Pi C hardware programs primarily benchmark cryptographic primitives, not a full deployed end-to-end IoT product. The ESP32 GitHub harness additionally includes an AES-GCM microbenchmark not contained in the author's latest curated ZIP; this non-regressing addition is intentionally retained.
-- The energy values are modeled using measured operation times and nominal powers; electrical power has not been measured.
-- Tamarin results cover different properties with different bounds, including a bounded epoch analysis. Do not equate all model logs with unbounded proofs.
-- The 0.61 ms back-end calibration is described as a measured best-of-nine in the supplied material, but the nine underlying raw timing samples have not yet been published.
+- The published CSVs match the 0.61 ms main study, not the removed historical 3,510-run calibration. Detailed older per-packet traces and old PDF/PNG plot artifacts were removed to prevent confusing them with current results. The current plot scripts are preserved so figures can be regenerated.
+- The [supplementary sensitivity](results/sensitivity/) remains available **as a distinct experiment** (its original baseline is 0.10 ms/HECM, with additional 0.86/1.19 ms tests). It is not silently merged into the main 0.61 ms dataset; per-seed outputs from its additional 480 runs are still not published.
+- The 0.61 ms back-end figure is described by the authors as the best of nine measured timings; the nine raw measurements have not been published here. The physical AES-GCM timing log is also still missing.
+- `ns3/hibaf-sim_sensitivity.cc` is an optional sensitivity variant that adds `--indTheta`. Do not use it as the unlabelled main simulator.
+- Symbolic Tamarin results have specific scope and bounds; flawed or older *counterexample models* are retained only as research evidence for why the final security fixes were necessary.
+- Hardware benchmarks do not constitute a full hardware end-to-end IoT deployment. Energy is estimated from cryptographic runtime and nominal power, not from direct electrical power measurements.
 
-## Repository organization
-
-Archived summary tables, figures, certificates, and proof logs remain available for traceability. The `campaign/campaign_common.py` runner supports supplementary historical comparisons; the **only** active main-calibration launchers are under `campaign/backend_0p61ms/`. Superseded 0.10 ms `campaign_hw*.py` launchers, the old 35-check reference suite, duplicate v33 sources, the original 3,510-run plotting script, obsolete 0.10 ms-only table/inventory utilities, and a redundant hardware source ZIP have been removed from the active tree. No simulation outputs were manufactured by this cleanup.
+**Cleanup policy:** the current branch excludes outdated main-run CSVs, figures, per-packet traces, and historical analyses. Removed files may still exist in **Git commit history**, which is separate from the clean current working tree.

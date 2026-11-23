@@ -1,16 +1,23 @@
-# Main HiBaF-Twin simulation datasets
+# HiBaF-Twin — current 0.61 ms simulation datasets
 
-This folder holds both **current 0.61 ms/HECM** and **historical** simulation datasets. Avoid mixing them.
+Only the latest verified main-campaign CSV files are retained in the active results folder:
 
-| File | Calibration | Scope |
-|---|---|---|
-| `all_runs_hwall_0p61.csv` | Current 0.61 ms back end | 2,670 runs = 89 configurations × 30 seeds |
-| `all_runs_hwPi_beaconfix_0p61.csv` | Current 0.61 ms back end | 510 runs = 17 configurations × 30 seeds |
-| `config_means_old_vs_new.csv` | Old vs. 0.61 ms | 80 matched configuration mean comparisons |
-| `all_runs_original_3510.csv`, `all_runs.csv` | Historical | Original 3,510-run study, **not** the current paper |
+| File | Meaning |
+|---|---|
+| [`all_runs_hwall_0p61.csv`](all_runs_hwall_0p61.csv) | 2,670 rows: 89 configurations × 30 seeds |
+| [`all_runs_hwPi_beaconfix_0p61.csv`](all_runs_hwPi_beaconfix_0p61.csv) | 510 rows: 17 configurations × 30 seeds |
+| [`config_means_old_vs_new.csv`](config_means_old_vs_new.csv) | 80 old-vs-new configuration means; **new** means verified using the latest per-run CSV |
 
-The second current CSV contains 180 `H_A_hwPi` rows corresponding to `HW_A` rows in the first CSV. Numerical values in every metric match across the two sources; superficial numeric spellings like `10` versus `10.0` do not indicate different runs. Therefore, the main campaign contains **3,000 distinct runs** (100 configurations × 30 independent seeds).
+The first and second CSVs contain **180 identical A runs** (six configurations × 30 seeds), so the total is **3,000 distinct executions**, or 100 configurations × 30 seeds. The files match the author's 23 November 2026 upload byte-for-byte.
 
-Run `python results/verify_latest_run_inventory.py` from the repo root to check all 3,180 stored rows, deduplicated counts, seed completeness, and the 80 new-calibration summary means.
+Re-validate without ns-3:
 
-**Provenance and limits:** These CSVs were supplied by the author on 2026-11-23, validated and committed byte-for-byte without generating or changing any simulated outcome. `tHecmBe` is not a CSV column; the 0.61 ms calibration is documented by the corresponding launch scripts. Some special `HW_BEsens` runs intentionally use 1.19 ms. The old-calibration `_o` values in `config_means_old_vs_new.csv`, the nine individual back-end timing samples, the 480 newer sensitivity run summaries, and the physical AES-GCM measurement log have not all been independently validated or published.
+```bash
+python results/verify_latest_run_inventory.py
+```
+
+The 0.61 ms back-end cost comes from the current campaign scripts, not a dedicated field in the CSV. The special `HW_BEsens` rows test 1.19 ms instead. The old `_o` comparison means remain unverified against their exact original baseline files.
+
+**Historical 3,510-run CSVs and their derived tables, PDF/PNG figures and old per-packet traces were deleted from the active branch** because they do not represent the final published 0.61 ms campaign. They may still be retrievable from Git history.
+
+Remaining unpublished evidence: raw per-seed outputs of 480 supplementary sensitivity runs, nine individual back-end timing samples, and the physical AES-GCM benchmark measurement log.
